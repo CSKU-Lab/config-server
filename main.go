@@ -12,6 +12,7 @@ import (
 
 	pb "github.com/CSKU-Lab/config-server/genproto/config/v1"
 	languages "github.com/CSKU-Lab/config-server/models/language"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/grpc"
@@ -32,13 +33,18 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 
+	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
 	if err != nil {
-		log.Fatalln("failed to listen: %v", err)
+		log.Fatalln("failed to listen: ", err)
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterConfigServiceServer(s, newServer(ctx, uri))
+	pb.RegisterConfigServiceServer(s, newServer(ctx, client))
 	reflection.Register(s)
 	log.Println("gRPC ConfigService registered")
 
@@ -56,99 +62,92 @@ func main() {
 		cancel()
 		s.GracefulStop()
 
+		if err := client.Disconnect(ctx); err != nil {
+			log.Fatalln("Can't disconnect mongodb : ", err)
+		}
+
 		log.Println("Successfully gracefully shutdown the server :D")
 	}()
 
 	if err := s.Serve(lis); err != nil {
-		log.Fatalln("Cannot start grpc server : %v", err)
+		log.Fatalln("Cannot start grpc server :", err)
 	}
 }
 
 type configServiceServer struct {
 	pb.UnimplementedConfigServiceServer
 
-	db  *mongo.Client
+	col *mongo.Collection
 	ctx context.Context
 }
 
-func newServer(ctx context.Context, mongoURI string) *configServiceServer {
-	client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
-			log.Fatal("Can't disconnect mongodb : ", err)
-		}
-	}()
-
+func newServer(ctx context.Context, client *mongo.Client) *configServiceServer {
 	return &configServiceServer{
 		ctx: ctx,
-		db:  client,
+		col: client.Database("configs").Collection("languages"),
 	}
 }
 
-func strPtr(s string) *string {
-	return &s
-}
+func (c *configServiceServer) GetLanguages(ctx context.Context, req *pb.GetLanguagesRequest) (*pb.GetLanguagesResponse, error) {
 
-func (c *configServiceServer) GetLanguages(ctx context.Context, request *pb.GetLanguagesRequest) (*pb.GetLanguagesResponse, error) {
+	cursor, err := c.col.Find(ctx, bson.D{})
+	if err != nil {
+		return nil, fmt.Errorf("Cannot get languages : %v", err)
+	}
+
+	var langauges []languages.Language
+	err = cursor.All(ctx, &langauges)
+	if err != nil {
+		return nil, err
+	}
+
+	responsesLangauges := []*pb.Language{}
+
+	for _, language := range langauges {
+		var name *string = nil
+		if req.IncludeName {
+			name = &language.Name
+		}
+		var version *string = nil
+		if req.IncludeVersion {
+			version = &language.Version
+		}
+		responsesLangauges = append(responsesLangauges, &pb.Language{
+			Id:          language.ID,
+			Name:        name,
+			Version:     version,
+			BuildScript: language.BuildScript,
+			RunScript:   language.RunScript,
+		})
+	}
+
 	return &pb.GetLanguagesResponse{
-		Languages: []*pb.Language{
-			{
-				Id:          "python_3.11.2",
-				Name:        strPtr("Python"),
-				Version:     strPtr("3.11.2"),
-				BuildScript: "no script",
-				RunScript:   "no script",
-			},
-		},
+		Languages: responsesLangauges,
 	}, nil
 
 }
 
-// func getAll(ctx context.Context, uri string) {
-//
-// 	coll := client.Database("configs").Collection("languages")
-//
-// 	cursor, err := coll.Find(ctx, bson.D{})
-// 	if err != nil {
-// 		log.Fatalln("There is an error :", err)
-// 	}
-//
-// 	var languages []languages.Language
-// 	if err := cursor.All(ctx, &languages); err != nil {
-// 		log.Fatalln("There is an error :", err)
-// 	}
-//
-// 	log.Println(languages)
-// }
-
-func work(ctx context.Context, uri string) {
-	client, err := mongo.Connect(options.Client().ApplyURI(uri))
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	defer func() {
-		if err := client.Disconnect(ctx); err != nil {
-			log.Fatal("Can't disconnect mongodb : ", err)
-		}
-	}()
-
-	pythonLang := languages.New(languages.Options{
-		Name:      "Python",
-		Version:   "3.11.2",
-		RunScript: "python3 main.py",
+func (c *configServiceServer) AddLanguage(ctx context.Context, req *pb.AddLanguageRequest) (*pb.LanguageResponse, error) {
+	lang := languages.New(&languages.Options{
+		Name:        req.Name,
+		Version:     req.Version,
+		BuildScript: *req.BuildScript,
+		RunScript:   req.RunScript,
 	})
-
-	coll := client.Database("configs").Collection("languages")
-
-	res, err := coll.InsertOne(ctx, &pythonLang)
+	_, err := c.col.InsertOne(ctx, lang)
 	if err != nil {
-		log.Fatalln("Cannot insert the document :", err)
+		return nil, err
 	}
 
-	log.Println("Language added : ", res)
+	return &pb.LanguageResponse{
+		Id:          lang.ID,
+		Name:        lang.Name,
+		Version:     lang.Version,
+		BuildScript: &lang.BuildScript,
+		RunScript:   lang.RunScript,
+	}, nil
+}
+
+func (c *configServiceServer) UpdateLangauge(ctx context.Context, req *pb.UpdateLanguageRequest) (*pb.LanguageResponse, error) {
+	_, err := c.col.UpdateOne(ctx, bson.D{"id", req.Id})
 }

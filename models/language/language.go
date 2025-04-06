@@ -17,7 +17,7 @@ type Options struct {
 	RunScript   string
 }
 
-func New(opts Options) *Language {
+func New(opts *Options) *Language {
 	lowerName := strings.ToLower(opts.Name)
 	id := strings.Join([]string{lowerName, opts.Version}, "_")
 	return &Language{

@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,7 +20,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ConfigService_GetLanguages_FullMethodName = "/config.v1.ConfigService/GetLanguages"
+	ConfigService_GetLanguages_FullMethodName   = "/config.v1.ConfigService/GetLanguages"
+	ConfigService_GetLanguage_FullMethodName    = "/config.v1.ConfigService/GetLanguage"
+	ConfigService_AddLanguage_FullMethodName    = "/config.v1.ConfigService/AddLanguage"
+	ConfigService_UpdateLanguage_FullMethodName = "/config.v1.ConfigService/UpdateLanguage"
+	ConfigService_DeleteLanguage_FullMethodName = "/config.v1.ConfigService/DeleteLanguage"
 )
 
 // ConfigServiceClient is the client API for ConfigService service.
@@ -27,6 +32,10 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ConfigServiceClient interface {
 	GetLanguages(ctx context.Context, in *GetLanguagesRequest, opts ...grpc.CallOption) (*GetLanguagesResponse, error)
+	GetLanguage(ctx context.Context, in *GetLanguageRequest, opts ...grpc.CallOption) (*LanguageResponse, error)
+	AddLanguage(ctx context.Context, in *AddLanguageRequest, opts ...grpc.CallOption) (*LanguageResponse, error)
+	UpdateLanguage(ctx context.Context, in *UpdateLanguageRequest, opts ...grpc.CallOption) (*LanguageResponse, error)
+	DeleteLanguage(ctx context.Context, in *DeleteLanguageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type configServiceClient struct {
@@ -47,11 +56,55 @@ func (c *configServiceClient) GetLanguages(ctx context.Context, in *GetLanguages
 	return out, nil
 }
 
+func (c *configServiceClient) GetLanguage(ctx context.Context, in *GetLanguageRequest, opts ...grpc.CallOption) (*LanguageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LanguageResponse)
+	err := c.cc.Invoke(ctx, ConfigService_GetLanguage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configServiceClient) AddLanguage(ctx context.Context, in *AddLanguageRequest, opts ...grpc.CallOption) (*LanguageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LanguageResponse)
+	err := c.cc.Invoke(ctx, ConfigService_AddLanguage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configServiceClient) UpdateLanguage(ctx context.Context, in *UpdateLanguageRequest, opts ...grpc.CallOption) (*LanguageResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LanguageResponse)
+	err := c.cc.Invoke(ctx, ConfigService_UpdateLanguage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *configServiceClient) DeleteLanguage(ctx context.Context, in *DeleteLanguageRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ConfigService_DeleteLanguage_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ConfigServiceServer is the server API for ConfigService service.
 // All implementations must embed UnimplementedConfigServiceServer
 // for forward compatibility.
 type ConfigServiceServer interface {
 	GetLanguages(context.Context, *GetLanguagesRequest) (*GetLanguagesResponse, error)
+	GetLanguage(context.Context, *GetLanguageRequest) (*LanguageResponse, error)
+	AddLanguage(context.Context, *AddLanguageRequest) (*LanguageResponse, error)
+	UpdateLanguage(context.Context, *UpdateLanguageRequest) (*LanguageResponse, error)
+	DeleteLanguage(context.Context, *DeleteLanguageRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedConfigServiceServer()
 }
 
@@ -64,6 +117,18 @@ type UnimplementedConfigServiceServer struct{}
 
 func (UnimplementedConfigServiceServer) GetLanguages(context.Context, *GetLanguagesRequest) (*GetLanguagesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetLanguages not implemented")
+}
+func (UnimplementedConfigServiceServer) GetLanguage(context.Context, *GetLanguageRequest) (*LanguageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLanguage not implemented")
+}
+func (UnimplementedConfigServiceServer) AddLanguage(context.Context, *AddLanguageRequest) (*LanguageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddLanguage not implemented")
+}
+func (UnimplementedConfigServiceServer) UpdateLanguage(context.Context, *UpdateLanguageRequest) (*LanguageResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateLanguage not implemented")
+}
+func (UnimplementedConfigServiceServer) DeleteLanguage(context.Context, *DeleteLanguageRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteLanguage not implemented")
 }
 func (UnimplementedConfigServiceServer) mustEmbedUnimplementedConfigServiceServer() {}
 func (UnimplementedConfigServiceServer) testEmbeddedByValue()                       {}
@@ -104,6 +169,78 @@ func _ConfigService_GetLanguages_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ConfigService_GetLanguage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLanguageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServiceServer).GetLanguage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConfigService_GetLanguage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServiceServer).GetLanguage(ctx, req.(*GetLanguageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConfigService_AddLanguage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddLanguageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServiceServer).AddLanguage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConfigService_AddLanguage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServiceServer).AddLanguage(ctx, req.(*AddLanguageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConfigService_UpdateLanguage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateLanguageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServiceServer).UpdateLanguage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConfigService_UpdateLanguage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServiceServer).UpdateLanguage(ctx, req.(*UpdateLanguageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ConfigService_DeleteLanguage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteLanguageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ConfigServiceServer).DeleteLanguage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ConfigService_DeleteLanguage_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ConfigServiceServer).DeleteLanguage(ctx, req.(*DeleteLanguageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ConfigService_ServiceDesc is the grpc.ServiceDesc for ConfigService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +251,22 @@ var ConfigService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetLanguages",
 			Handler:    _ConfigService_GetLanguages_Handler,
+		},
+		{
+			MethodName: "GetLanguage",
+			Handler:    _ConfigService_GetLanguage_Handler,
+		},
+		{
+			MethodName: "AddLanguage",
+			Handler:    _ConfigService_AddLanguage_Handler,
+		},
+		{
+			MethodName: "UpdateLanguage",
+			Handler:    _ConfigService_UpdateLanguage_Handler,
+		},
+		{
+			MethodName: "DeleteLanguage",
+			Handler:    _ConfigService_DeleteLanguage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
