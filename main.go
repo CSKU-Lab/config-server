@@ -181,7 +181,6 @@ func (c *configServiceServer) UpdateLanguage(ctx context.Context, req *pb.Update
 	})
 
 	updatedFields := getUpdatedFields(modLang)
-	log.Println(updatedFields)
 	_, err := c.col.UpdateOne(ctx, bson.M{"id": req.GetId()}, bson.D{{"$set", updatedFields}})
 	if err != nil {
 		return nil, err
