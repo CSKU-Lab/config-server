@@ -1,4 +1,4 @@
-package languages
+package language
 
 import "strings"
 
@@ -18,8 +18,7 @@ type Options struct {
 }
 
 func New(opts *Options) *Language {
-	lowerName := strings.ToLower(opts.Name)
-	id := strings.Join([]string{lowerName, opts.Version}, "_")
+	id := genID(opts.Name, opts.Version)
 	return &Language{
 		ID:          id,
 		Name:        opts.Name,
@@ -27,4 +26,43 @@ func New(opts *Options) *Language {
 		BuildScript: opts.BuildScript,
 		RunScript:   opts.RunScript,
 	}
+}
+
+type UpdateLanguage struct {
+	ID          *string `bson:"id"`
+	Name        *string `bson:"name"`
+	Version     *string `bson:"version"`
+	BuildScript *string `bson:"build_script,omitempty"`
+	RunScript   *string `bson:"run_script"`
+}
+
+type PartialOptions struct {
+	Name        *string
+	Version     *string
+	BuildScript *string
+	RunScript   *string
+}
+
+func NewUpdate(opts *PartialOptions) *UpdateLanguage {
+	var id *string = nil
+	if opts.Name != nil && opts.Version != nil {
+		_id := genID(*opts.Name, *opts.Version)
+		id = &_id
+	}
+
+	return &UpdateLanguage{
+		ID:          id,
+		Name:        opts.Name,
+		Version:     opts.Version,
+		BuildScript: opts.BuildScript,
+		RunScript:   opts.RunScript,
+	}
+}
+
+func genID(name, version string) string {
+	id := ""
+	lowerName := strings.ToLower(name)
+	id = strings.Join([]string{lowerName, version}, "_")
+
+	return id
 }

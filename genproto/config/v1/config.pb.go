@@ -120,8 +120,9 @@ func (x *GetLanguagesRequest) GetIncludeVersion() bool {
 
 type GetLanguageRequest struct {
 	state          protoimpl.MessageState `protogen:"open.v1"`
-	IncludeName    bool                   `protobuf:"varint,1,opt,name=include_name,json=includeName,proto3" json:"include_name,omitempty"`
-	IncludeVersion bool                   `protobuf:"varint,2,opt,name=include_version,json=includeVersion,proto3" json:"include_version,omitempty"`
+	Id             string                 `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
+	IncludeName    bool                   `protobuf:"varint,5,opt,name=include_name,json=includeName,proto3" json:"include_name,omitempty"`
+	IncludeVersion bool                   `protobuf:"varint,6,opt,name=include_version,json=includeVersion,proto3" json:"include_version,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
@@ -154,6 +155,13 @@ func (x *GetLanguageRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use GetLanguageRequest.ProtoReflect.Descriptor instead.
 func (*GetLanguageRequest) Descriptor() ([]byte, []int) {
 	return file_config_v1_config_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetLanguageRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
 }
 
 func (x *GetLanguageRequest) GetIncludeName() bool {
@@ -519,10 +527,11 @@ const file_config_v1_config_proto_rawDesc = "" +
 	"\tlanguages\x18\x01 \x03(\v2\x13.config.v1.LanguageR\tlanguages\"a\n" +
 	"\x13GetLanguagesRequest\x12!\n" +
 	"\finclude_name\x18\x01 \x01(\bR\vincludeName\x12'\n" +
-	"\x0finclude_version\x18\x02 \x01(\bR\x0eincludeVersion\"`\n" +
-	"\x12GetLanguageRequest\x12!\n" +
-	"\finclude_name\x18\x01 \x01(\bR\vincludeName\x12'\n" +
-	"\x0finclude_version\x18\x02 \x01(\bR\x0eincludeVersion\"\xa9\x01\n" +
+	"\x0finclude_version\x18\x02 \x01(\bR\x0eincludeVersion\"\x82\x01\n" +
+	"\x12GetLanguageRequest\x12\x0e\n" +
+	"\x02id\x18\x04 \x01(\tR\x02id\x12!\n" +
+	"\finclude_name\x18\x05 \x01(\bR\vincludeName\x12'\n" +
+	"\x0finclude_version\x18\x06 \x01(\bR\x0eincludeVersionJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04\"\xa9\x01\n" +
 	"\bLanguage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\x04name\x18\x02 \x01(\tH\x00R\x04name\x88\x01\x01\x12\x1d\n" +

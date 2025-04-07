@@ -7,17 +7,18 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"reflect"
 	"syscall"
 	"time"
 
+	"github.com/CSKU-Lab/config-server/domain/services"
 	pb "github.com/CSKU-Lab/config-server/genproto/config/v1"
-	languages "github.com/CSKU-Lab/config-server/models/language"
-	"go.mongodb.org/mongo-driver/v2/bson"
+	"github.com/CSKU-Lab/config-server/internal/adapters/mongodb"
+	language "github.com/CSKU-Lab/config-server/models/language"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func main() {
@@ -32,12 +33,14 @@ func main() {
 		port = "8080"
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-
 	client, err := mongo.Connect(options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Fatalln(err)
 	}
+
+	db := client.Database("configs")
+	languageRepo := mongodb.NewLanguageRepo(db)
+	languageService := services.NewLanguageService(languageRepo)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
 	if err != nil {
@@ -45,12 +48,14 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterConfigServiceServer(s, newServer(ctx, client))
+	pb.RegisterConfigServiceServer(s, newServer(languageService))
 	reflection.Register(s)
 	log.Println("gRPC ConfigService registered")
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
+	ctx, cancel := context.WithCancel(context.Background())
 
 	go func() {
 		sig := <-sigs
@@ -77,32 +82,21 @@ func main() {
 
 type configServiceServer struct {
 	pb.UnimplementedConfigServiceServer
-
-	col *mongo.Collection
-	ctx context.Context
+	langService services.LanguageService
 }
 
-func newServer(ctx context.Context, client *mongo.Client) *configServiceServer {
+func newServer(langService services.LanguageService) *configServiceServer {
 	return &configServiceServer{
-		ctx: ctx,
-		col: client.Database("configs").Collection("languages"),
+		langService: langService,
 	}
 }
 
 func (c *configServiceServer) GetLanguages(ctx context.Context, req *pb.GetLanguagesRequest) (*pb.GetLanguagesResponse, error) {
-
-	cursor, err := c.col.Find(ctx, bson.D{})
-	if err != nil {
-		return nil, fmt.Errorf("Cannot get languages : %v", err)
-	}
-
-	var langauges []languages.Language
-	err = cursor.All(ctx, &langauges)
+	responsesLangauges := []*pb.Language{}
+	langauges, err := c.langService.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	responsesLangauges := []*pb.Language{}
 
 	for _, language := range langauges {
 		var name *string = nil
@@ -128,14 +122,12 @@ func (c *configServiceServer) GetLanguages(ctx context.Context, req *pb.GetLangu
 
 }
 
-func (c *configServiceServer) AddLanguage(ctx context.Context, req *pb.AddLanguageRequest) (*pb.LanguageResponse, error) {
-	lang := languages.New(&languages.Options{
-		Name:        req.GetName(),
-		Version:     req.GetVersion(),
-		BuildScript: req.GetBuildScript(),
-		RunScript:   req.GetRunScript(),
-	})
-	_, err := c.col.InsertOne(ctx, lang)
+func (c *configServiceServer) GetLanguage(ctx context.Context, req *pb.GetLanguageRequest) (*pb.LanguageResponse, error) {
+	if req.GetId() == "" {
+		return nil, fmt.Errorf("Id is required!")
+	}
+
+	lang, err := c.langService.GetByID(ctx, req.GetId())
 	if err != nil {
 		return nil, err
 	}
@@ -149,48 +141,61 @@ func (c *configServiceServer) AddLanguage(ctx context.Context, req *pb.AddLangua
 	}, nil
 }
 
-func getUpdatedFields(i any) bson.D {
-	v := reflect.ValueOf(i).Elem()
-	t := reflect.TypeOf(i).Elem()
+func (c *configServiceServer) AddLanguage(ctx context.Context, req *pb.AddLanguageRequest) (*pb.LanguageResponse, error) {
+	lang := language.New(&language.Options{
+		Name:        req.GetName(),
+		Version:     req.GetVersion(),
+		BuildScript: req.GetBuildScript(),
+		RunScript:   req.GetRunScript(),
+	})
 
-	fields := bson.D{}
-	for i := range v.NumField() {
-		fieldVal := v.Field(i)
-		fieldTyp := t.Field(i)
-		bsonTag := fieldTyp.Tag.Get("bson")
-
-		if fieldVal.IsNil() {
-			continue
-		}
-
-		fields = append(fields, bson.E{Key: bsonTag, Value: fieldVal.Elem().Interface()})
+	err := c.langService.Add(ctx, lang)
+	if err != nil {
+		return nil, err
 	}
 
-	return fields
+	return &pb.LanguageResponse{
+		Id:          lang.ID,
+		Name:        lang.Name,
+		Version:     lang.Version,
+		BuildScript: &lang.BuildScript,
+		RunScript:   lang.RunScript,
+	}, nil
 }
 
 func (c *configServiceServer) UpdateLanguage(ctx context.Context, req *pb.UpdateLanguageRequest) (*pb.LanguageResponse, error) {
 	if req.GetId() == "" {
 		return nil, fmt.Errorf("Id is required!")
 	}
-	modLang := languages.NewUpdate(&languages.PartialOptions{
+
+	updated, err := c.langService.UpdateByID(ctx, req.GetId(), &language.PartialOptions{
 		Name:        req.Name,
 		Version:     req.Version,
 		BuildScript: req.BuildScript,
 		RunScript:   req.RunScript,
 	})
-
-	updatedFields := getUpdatedFields(modLang)
-	log.Println(updatedFields)
-	_, err := c.col.UpdateOne(ctx, bson.M{"id": req.GetId()}, bson.D{{"$set", updatedFields}})
 	if err != nil {
 		return nil, err
 	}
+
 	return &pb.LanguageResponse{
-		Id:          *modLang.ID,
-		Name:        *modLang.Name,
-		Version:     *modLang.Version,
-		BuildScript: modLang.BuildScript,
-		RunScript:   *modLang.RunScript,
+		Id:          updated.ID,
+		Name:        updated.Name,
+		Version:     updated.Version,
+		BuildScript: &updated.BuildScript,
+		RunScript:   updated.RunScript,
 	}, nil
+}
+
+func (c *configServiceServer) DeleteLanguage(ctx context.Context, req *pb.DeleteLanguageRequest) (*emptypb.Empty, error) {
+	if req.GetId() == "" {
+		return nil, fmt.Errorf("Id is required!")
+	}
+
+	err := c.langService.DeleteByID(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
 }
