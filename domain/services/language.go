@@ -3,8 +3,8 @@ package services
 import (
 	"context"
 
+	"github.com/CSKU-Lab/config-server/domain/models/language"
 	"github.com/CSKU-Lab/config-server/domain/repositories"
-	"github.com/CSKU-Lab/config-server/models/language"
 )
 
 type languageService struct {
@@ -63,12 +63,22 @@ func (l *languageService) UpdateByID(ctx context.Context, ID string, body *langu
 		return nil, err
 	}
 
+	buildScript := lang.BuildScript
+	if body.BuildScript != nil {
+		buildScript = *body.BuildScript
+	}
+
+	runScript := lang.BuildScript
+	if body.RunScript != nil {
+		runScript = *body.RunScript
+	}
+
 	return &language.Language{
-		ID:          lang.ID,
-		Name:        *body.Name,
-		Version:     *body.Version,
-		BuildScript: lang.BuildScript,
-		RunScript:   lang.RunScript,
+		ID:          *modLang.ID,
+		Name:        *modLang.Name,
+		Version:     *modLang.Version,
+		BuildScript: buildScript,
+		RunScript:   runScript,
 	}, nil
 }
 

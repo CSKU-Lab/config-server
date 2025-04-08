@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/CSKU-Lab/config-server/domain/services"
+	"github.com/CSKU-Lab/config-server/domain/models/language"
 	pb "github.com/CSKU-Lab/config-server/genproto/config/v1"
 	"github.com/CSKU-Lab/config-server/internal/adapters/mongodb"
-	language "github.com/CSKU-Lab/config-server/models/language"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/grpc"

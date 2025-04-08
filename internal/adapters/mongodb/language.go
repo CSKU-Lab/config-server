@@ -7,7 +7,7 @@ import (
 
 	"github.com/CSKU-Lab/config-server/domain/cerrors"
 	"github.com/CSKU-Lab/config-server/domain/repositories"
-	"github.com/CSKU-Lab/config-server/models/language"
+	"github.com/CSKU-Lab/config-server/domain/models/language"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )

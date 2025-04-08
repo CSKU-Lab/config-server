@@ -3,7 +3,7 @@ package repositories
 import (
 	"context"
 
-	"github.com/CSKU-Lab/config-server/models/language"
+	"github.com/CSKU-Lab/config-server/domain/models/language"
 )
 
 type LanguageRepository interface {
