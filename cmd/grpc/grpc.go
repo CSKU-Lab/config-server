@@ -10,8 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/CSKU-Lab/config-server/domain/services"
+	"github.com/CSKU-Lab/config-server/domain/models/compare"
 	"github.com/CSKU-Lab/config-server/domain/models/language"
+	"github.com/CSKU-Lab/config-server/domain/services"
 	pb "github.com/CSKU-Lab/config-server/genproto/config/v1"
 	"github.com/CSKU-Lab/config-server/internal/adapters/mongodb"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -42,13 +43,16 @@ func main() {
 	languageRepo := mongodb.NewLanguageRepo(db)
 	languageService := services.NewLanguageService(languageRepo)
 
+	compareRepo := mongodb.NewCompareRepo(db)
+	compareService := services.NewCompareService(compareRepo)
+
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
 	if err != nil {
 		log.Fatalln("failed to listen: ", err)
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterConfigServiceServer(s, newServer(languageService))
+	pb.RegisterConfigServiceServer(s, newServer(languageService, compareService))
 	reflection.Register(s)
 	log.Println("gRPC ConfigService registered")
 
@@ -82,12 +86,14 @@ func main() {
 
 type configServiceServer struct {
 	pb.UnimplementedConfigServiceServer
-	langService services.LanguageService
+	langService    services.LanguageService
+	compareService services.CompareService
 }
 
-func newServer(langService services.LanguageService) *configServiceServer {
+func newServer(langService services.LanguageService, compareService services.CompareService) *configServiceServer {
 	return &configServiceServer{
-		langService: langService,
+		langService:    langService,
+		compareService: compareService,
 	}
 }
 
@@ -198,4 +204,104 @@ func (c *configServiceServer) DeleteLanguage(ctx context.Context, req *pb.Delete
 	}
 
 	return &emptypb.Empty{}, nil
+}
+
+func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompareRequest) (*pb.CompareResponse, error) {
+	compare := compare.New(&compare.Option{
+		Name:        req.GetName(),
+		Script:      req.GetScript(),
+		BuildScript: req.GetBuildScript(),
+		RunScript:   req.GetRunScript(),
+	})
+
+	err := c.compareService.Add(ctx, compare)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.CompareResponse{
+		Id:          compare.ID,
+		Name:        compare.Name,
+		Script:      compare.Script,
+		BuildScript: compare.BuildScript,
+		RunScript:   compare.RunScript,
+	}, nil
+}
+
+func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompareRequest) (*pb.CompareResponse, error) {
+	if req.GetId() == "" {
+		return nil, fmt.Errorf("Id is required!")
+	}
+
+	compare, err := c.compareService.GetByID(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.CompareResponse{
+		Id:          compare.ID,
+		Name:        compare.Name,
+		Script:      compare.Script,
+		BuildScript: compare.BuildScript,
+		RunScript:   compare.RunScript,
+	}, nil
+}
+
+func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empty) (*pb.GetComparesResponse, error) {
+	compare, err := c.compareService.GetAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	responses := []*pb.CompareResponse{}
+	for _, compare := range compare {
+		responses = append(responses, &pb.CompareResponse{
+			Id:          compare.ID,
+			Name:        compare.Name,
+			Script:      compare.Script,
+			BuildScript: compare.BuildScript,
+			RunScript:   compare.RunScript,
+		})
+	}
+
+	return &pb.GetComparesResponse{
+		Compares: responses,
+	}, nil
+}
+
+func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateCompareRequest) (*pb.CompareResponse, error) {
+	if req.GetId() == "" {
+		return nil, fmt.Errorf("Id is required!")
+	}
+
+	updated, err := c.compareService.UpdateByID(ctx, req.GetId(), &compare.PartialOption{
+		Name:        req.Name,
+		Script:      req.Script,
+		BuildScript: req.BuildScript,
+		RunScript:   req.RunScript,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &pb.CompareResponse{
+		Id:          *updated.ID,
+		Name:        *updated.Name,
+		Script:      *updated.Script,
+		BuildScript: *updated.BuildScript,
+		RunScript:   *updated.RunScript,
+	}, nil
+}
+
+func (c *configServiceServer) DeleteCompare(ctx context.Context, req *pb.DeleteCompareRequest) (*emptypb.Empty, error) {
+	if req.GetId() == "" {
+		return nil, fmt.Errorf("Id is required!")
+	}
+
+	err := c.compareService.DeleteByID(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
