@@ -69,11 +69,7 @@ type PartialOption struct {
 func NewUpdate(option *PartialOption) *UpdateCompare {
 	var id *string = nil
 	if option.Name != nil {
-		splitted := strings.Split(*option.Name, " ")
-		for i := range len(splitted) {
-			splitted[i] = strings.ToLower(splitted[i])
-		}
-		_id := strings.Join(splitted, "_")
+		_id := generateID(*option.Name)
 		id = &_id
 	}
 
@@ -87,4 +83,8 @@ func NewUpdate(option *PartialOption) *UpdateCompare {
 		RunName:     option.RunName,
 		Description: option.Description,
 	}
+}
+
+func generateID(name string) string {
+	return strings.ToLower(strings.ReplaceAll(name, " ", "_"))
 }

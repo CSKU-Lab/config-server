@@ -207,7 +207,7 @@ func (c *configServiceServer) DeleteLanguage(ctx context.Context, req *pb.Delete
 }
 
 func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompareRequest) (*pb.CompareResponse, error) {
-	compare := compare.New(&compare.Option{
+	compare, err := c.compareService.Add(ctx, &compare.Option{
 		Name:        req.GetName(),
 		Script:      req.GetScript(),
 		ScriptName:  req.GetScriptName(),
@@ -216,8 +216,6 @@ func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompare
 		RunName:     req.GetRunName(),
 		Description: req.GetDescription(),
 	})
-
-	err := c.compareService.Add(ctx, compare)
 	if err != nil {
 		return nil, err
 	}
@@ -300,14 +298,14 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 	}
 
 	return &pb.CompareResponse{
-		Id:          *updated.ID,
-		Name:        *updated.Name,
-		Script:      *updated.Script,
-		ScriptName:  *updated.ScriptName,
-		BuildScript: *updated.BuildScript,
-		RunScript:   *updated.RunScript,
-		RunName:     *updated.RunName,
-		Description: *updated.Description,
+		Id:          updated.ID,
+		Name:        updated.Name,
+		Script:      updated.Script,
+		ScriptName:  updated.ScriptName,
+		BuildScript: updated.BuildScript,
+		RunScript:   updated.RunScript,
+		RunName:     updated.RunName,
+		Description: updated.Description,
 	}, nil
 }
 

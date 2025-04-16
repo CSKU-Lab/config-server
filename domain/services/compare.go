@@ -12,10 +12,10 @@ type compareService struct {
 }
 
 type CompareService interface {
-	Add(ctx context.Context, body *compare.Compare) error
+	Add(ctx context.Context, body *compare.Option) (*compare.Compare, error)
 	GetAll(ctx context.Context) ([]compare.Compare, error)
 	GetByID(ctx context.Context, ID string) (*compare.Compare, error)
-	UpdateByID(ctx context.Context, ID string, body *compare.PartialOption) (*compare.UpdateCompare, error)
+	UpdateByID(ctx context.Context, ID string, body *compare.PartialOption) (*compare.Compare, error)
 	DeleteByID(ctx context.Context, ID string) error
 }
 
@@ -25,8 +25,18 @@ func NewCompareService(repo repositories.CompareRepository) CompareService {
 	}
 }
 
-func (c *compareService) Add(ctx context.Context, body *compare.Compare) error {
-	return c.repo.Add(ctx, body)
+func (c *compareService) Add(ctx context.Context, body *compare.Option) (*compare.Compare, error) {
+	compare := compare.New(&compare.Option{
+		Name:        body.Name,
+		Script:      body.Script,
+		ScriptName:  body.ScriptName,
+		BuildScript: body.BuildScript,
+		RunScript:   body.RunScript,
+		RunName:     body.RunName,
+		Description: body.Description,
+	})
+
+	return compare, c.repo.Add(ctx, compare)
 }
 
 func (c *compareService) GetAll(ctx context.Context) ([]compare.Compare, error) {
@@ -37,45 +47,30 @@ func (c *compareService) GetByID(ctx context.Context, ID string) (*compare.Compa
 	return c.repo.GetByID(ctx, ID)
 }
 
-func (c *compareService) UpdateByID(ctx context.Context, ID string, body *compare.PartialOption) (*compare.UpdateCompare, error) {
-	oldCompare, err := c.repo.GetByID(ctx, ID)
+func (c *compareService) UpdateByID(ctx context.Context, ID string, body *compare.PartialOption) (*compare.Compare, error) {
+	updatedFields := compare.NewUpdate(&compare.PartialOption{
+		Name:        body.Name,
+		Script:      body.Script,
+		ScriptName:  body.ScriptName,
+		BuildScript: body.BuildScript,
+		RunScript:   body.RunScript,
+		RunName:     body.RunName,
+		Description: body.Description,
+	})
+
+	err := c.repo.UpdateByID(ctx, ID, updatedFields)
 	if err != nil {
 		return nil, err
 	}
 
-	updated := compare.NewUpdate(body)
-	err = c.repo.UpdateByID(ctx, ID, updated)
+	id := ID
+	if updatedFields.ID != nil {
+		id = *updatedFields.ID
+	}
+
+	updated, err := c.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
-	}
-
-	if updated.Name == nil {
-		updated.ID = &oldCompare.ID
-		updated.Name = &oldCompare.Name
-	}
-
-	if updated.Script == nil {
-		updated.Script = &oldCompare.Script
-	}
-
-	if updated.ScriptName == nil {
-		updated.ScriptName = &oldCompare.ScriptName
-	}
-
-	if updated.RunName == nil {
-		updated.RunName = &oldCompare.RunName
-	}
-
-	if updated.BuildScript == nil {
-		updated.BuildScript = &oldCompare.BuildScript
-	}
-
-	if updated.RunScript == nil {
-		updated.RunScript = &oldCompare.RunScript
-	}
-
-	if updated.Description == nil {
-		updated.Description = &oldCompare.Description
 	}
 
 	return updated, nil
