@@ -10,6 +10,7 @@ type Compare struct {
 	BuildScript string `bson:"build_script"`
 	RunScript   string `bson:"run_script"`
 	RunName     string `bson:"run_name"`
+	Description string `bson:"description"`
 }
 
 type Option struct {
@@ -19,17 +20,28 @@ type Option struct {
 	BuildScript string
 	RunScript   string
 	RunName     string
+	Description string
 }
 
 func New(option *Option) *Compare {
+	var id string
+	if option.Name != "" {
+		splitted := strings.Split(option.Name, " ")
+		for i := range len(splitted) {
+			splitted[i] = strings.ToLower(splitted[i])
+		}
+		id = strings.Join(splitted, "_")
+	}
+
 	return &Compare{
-		ID:          strings.ToLower(option.Name),
+		ID:          id,
 		Name:        option.Name,
 		Script:      option.Script,
 		ScriptName:  option.ScriptName,
 		BuildScript: option.BuildScript,
 		RunScript:   option.RunScript,
 		RunName:     option.RunName,
+		Description: option.Description,
 	}
 }
 
@@ -41,6 +53,7 @@ type UpdateCompare struct {
 	BuildScript *string `bson:"build_script"`
 	RunScript   *string `bson:"run_script"`
 	RunName     *string `bson:"run_name"`
+	Description *string `bson:"description"`
 }
 
 type PartialOption struct {
@@ -50,12 +63,17 @@ type PartialOption struct {
 	BuildScript *string
 	RunScript   *string
 	RunName     *string
+	Description *string
 }
 
 func NewUpdate(option *PartialOption) *UpdateCompare {
 	var id *string = nil
 	if option.Name != nil {
-		_id := strings.ToLower(*option.Name)
+		splitted := strings.Split(*option.Name, " ")
+		for i := range len(splitted) {
+			splitted[i] = strings.ToLower(splitted[i])
+		}
+		_id := strings.Join(splitted, "_")
 		id = &_id
 	}
 
@@ -67,5 +85,6 @@ func NewUpdate(option *PartialOption) *UpdateCompare {
 		BuildScript: option.BuildScript,
 		RunScript:   option.RunScript,
 		RunName:     option.RunName,
+		Description: option.Description,
 	}
 }

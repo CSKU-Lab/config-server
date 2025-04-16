@@ -62,12 +62,20 @@ func (c *compareService) UpdateByID(ctx context.Context, ID string, body *compar
 		updated.ScriptName = &oldCompare.ScriptName
 	}
 
+	if updated.RunName == nil {
+		updated.RunName = &oldCompare.RunName
+	}
+
 	if updated.BuildScript == nil {
 		updated.BuildScript = &oldCompare.BuildScript
 	}
 
 	if updated.RunScript == nil {
 		updated.RunScript = &oldCompare.RunScript
+	}
+
+	if updated.Description == nil {
+		updated.Description = &oldCompare.Description
 	}
 
 	return updated, nil

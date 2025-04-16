@@ -30,6 +30,7 @@ type CompareResponse struct {
 	RunScript     string                 `protobuf:"bytes,5,opt,name=run_script,json=runScript,proto3" json:"run_script,omitempty"`
 	ScriptName    string                 `protobuf:"bytes,6,opt,name=script_name,json=scriptName,proto3" json:"script_name,omitempty"`
 	RunName       string                 `protobuf:"bytes,7,opt,name=run_name,json=runName,proto3" json:"run_name,omitempty"`
+	Description   string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -109,6 +110,13 @@ func (x *CompareResponse) GetScriptName() string {
 func (x *CompareResponse) GetRunName() string {
 	if x != nil {
 		return x.RunName
+	}
+	return ""
+}
+
+func (x *CompareResponse) GetDescription() string {
+	if x != nil {
+		return x.Description
 	}
 	return ""
 }
@@ -209,6 +217,7 @@ type AddCompareRequest struct {
 	RunScript     string                 `protobuf:"bytes,4,opt,name=run_script,json=runScript,proto3" json:"run_script,omitempty"`
 	ScriptName    string                 `protobuf:"bytes,5,opt,name=script_name,json=scriptName,proto3" json:"script_name,omitempty"`
 	RunName       string                 `protobuf:"bytes,6,opt,name=run_name,json=runName,proto3" json:"run_name,omitempty"`
+	Description   string                 `protobuf:"bytes,7,opt,name=description,proto3" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -285,6 +294,13 @@ func (x *AddCompareRequest) GetRunName() string {
 	return ""
 }
 
+func (x *AddCompareRequest) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
 type UpdateCompareRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -294,6 +310,7 @@ type UpdateCompareRequest struct {
 	RunScript     *string                `protobuf:"bytes,5,opt,name=run_script,json=runScript,proto3,oneof" json:"run_script,omitempty"`
 	ScriptName    *string                `protobuf:"bytes,6,opt,name=script_name,json=scriptName,proto3,oneof" json:"script_name,omitempty"`
 	RunName       *string                `protobuf:"bytes,7,opt,name=run_name,json=runName,proto3,oneof" json:"run_name,omitempty"`
+	Description   *string                `protobuf:"bytes,8,opt,name=description,proto3,oneof" json:"description,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -377,6 +394,13 @@ func (x *UpdateCompareRequest) GetRunName() string {
 	return ""
 }
 
+func (x *UpdateCompareRequest) GetDescription() string {
+	if x != nil && x.Description != nil {
+		return *x.Description
+	}
+	return ""
+}
+
 type DeleteCompareRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -425,7 +449,7 @@ var File_config_v1_compares_proto protoreflect.FileDescriptor
 
 const file_config_v1_compares_proto_rawDesc = "" +
 	"\n" +
-	"\x18config/v1/compares.proto\x12\tconfig.v1\"\xcb\x01\n" +
+	"\x18config/v1/compares.proto\x12\tconfig.v1\"\xed\x01\n" +
 	"\x0fCompareResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x16\n" +
@@ -435,11 +459,12 @@ const file_config_v1_compares_proto_rawDesc = "" +
 	"run_script\x18\x05 \x01(\tR\trunScript\x12\x1f\n" +
 	"\vscript_name\x18\x06 \x01(\tR\n" +
 	"scriptName\x12\x19\n" +
-	"\brun_name\x18\a \x01(\tR\arunName\"M\n" +
+	"\brun_name\x18\a \x01(\tR\arunName\x12 \n" +
+	"\vdescription\x18\b \x01(\tR\vdescription\"M\n" +
 	"\x13GetComparesResponse\x126\n" +
 	"\bcompares\x18\x01 \x03(\v2\x1a.config.v1.CompareResponseR\bcompares\"#\n" +
 	"\x11GetCompareRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\xbd\x01\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xdf\x01\n" +
 	"\x11AddCompareRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x16\n" +
 	"\x06script\x18\x02 \x01(\tR\x06script\x12!\n" +
@@ -448,7 +473,8 @@ const file_config_v1_compares_proto_rawDesc = "" +
 	"run_script\x18\x04 \x01(\tR\trunScript\x12\x1f\n" +
 	"\vscript_name\x18\x05 \x01(\tR\n" +
 	"scriptName\x12\x19\n" +
-	"\brun_name\x18\x06 \x01(\tR\arunName\"\xbf\x02\n" +
+	"\brun_name\x18\x06 \x01(\tR\arunName\x12 \n" +
+	"\vdescription\x18\a \x01(\tR\vdescription\"\xf6\x02\n" +
 	"\x14UpdateCompareRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\x04name\x18\x02 \x01(\tH\x00R\x04name\x88\x01\x01\x12\x1b\n" +
@@ -458,13 +484,15 @@ const file_config_v1_compares_proto_rawDesc = "" +
 	"run_script\x18\x05 \x01(\tH\x03R\trunScript\x88\x01\x01\x12$\n" +
 	"\vscript_name\x18\x06 \x01(\tH\x04R\n" +
 	"scriptName\x88\x01\x01\x12\x1e\n" +
-	"\brun_name\x18\a \x01(\tH\x05R\arunName\x88\x01\x01B\a\n" +
+	"\brun_name\x18\a \x01(\tH\x05R\arunName\x88\x01\x01\x12%\n" +
+	"\vdescription\x18\b \x01(\tH\x06R\vdescription\x88\x01\x01B\a\n" +
 	"\x05_nameB\t\n" +
 	"\a_scriptB\x0f\n" +
 	"\r_build_scriptB\r\n" +
 	"\v_run_scriptB\x0e\n" +
 	"\f_script_nameB\v\n" +
-	"\t_run_name\"&\n" +
+	"\t_run_nameB\x0e\n" +
+	"\f_description\"&\n" +
 	"\x14DeleteCompareRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02idB\x95\x01\n" +
 	"\rcom.config.v1B\rComparesProtoP\x01Z0github.com/CSKU-Lab/config-server/grpc/config/v1\xa2\x02\x03CXX\xaa\x02\tConfig.V1\xca\x02\tConfig\\V1\xe2\x02\x15Config\\V1\\GPBMetadata\xea\x02\n" +

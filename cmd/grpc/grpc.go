@@ -214,6 +214,7 @@ func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompare
 		BuildScript: req.GetBuildScript(),
 		RunScript:   req.GetRunScript(),
 		RunName:     req.GetRunName(),
+		Description: req.GetDescription(),
 	})
 
 	err := c.compareService.Add(ctx, compare)
@@ -229,6 +230,7 @@ func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompare
 		BuildScript: compare.BuildScript,
 		RunScript:   compare.RunScript,
 		RunName:     compare.RunName,
+		Description: compare.Description,
 	}, nil
 }
 
@@ -250,6 +252,7 @@ func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompare
 		BuildScript: compare.BuildScript,
 		RunScript:   compare.RunScript,
 		RunName:     compare.RunName,
+		Description: compare.Description,
 	}, nil
 }
 
@@ -269,6 +272,7 @@ func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empt
 			BuildScript: compare.BuildScript,
 			RunScript:   compare.RunScript,
 			RunName:     compare.RunName,
+			Description: compare.Description,
 		})
 	}
 
@@ -289,6 +293,7 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 		BuildScript: req.BuildScript,
 		RunScript:   req.RunScript,
 		RunName:     req.RunName,
+		Description: req.Description,
 	})
 	if err != nil {
 		return nil, err
@@ -302,6 +307,7 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 		BuildScript: *updated.BuildScript,
 		RunScript:   *updated.RunScript,
 		RunName:     *updated.RunName,
+		Description: *updated.Description,
 	}, nil
 }
 
