@@ -210,8 +210,10 @@ func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompare
 	compare := compare.New(&compare.Option{
 		Name:        req.GetName(),
 		Script:      req.GetScript(),
+		ScriptName:  req.GetScriptName(),
 		BuildScript: req.GetBuildScript(),
 		RunScript:   req.GetRunScript(),
+		RunName:     req.GetRunName(),
 	})
 
 	err := c.compareService.Add(ctx, compare)
@@ -223,8 +225,10 @@ func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompare
 		Id:          compare.ID,
 		Name:        compare.Name,
 		Script:      compare.Script,
+		ScriptName:  compare.ScriptName,
 		BuildScript: compare.BuildScript,
 		RunScript:   compare.RunScript,
+		RunName:     compare.RunName,
 	}, nil
 }
 
@@ -242,8 +246,10 @@ func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompare
 		Id:          compare.ID,
 		Name:        compare.Name,
 		Script:      compare.Script,
+		ScriptName:  compare.ScriptName,
 		BuildScript: compare.BuildScript,
 		RunScript:   compare.RunScript,
+		RunName:     compare.RunName,
 	}, nil
 }
 
@@ -259,8 +265,10 @@ func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empt
 			Id:          compare.ID,
 			Name:        compare.Name,
 			Script:      compare.Script,
+			ScriptName:  compare.ScriptName,
 			BuildScript: compare.BuildScript,
 			RunScript:   compare.RunScript,
+			RunName:     compare.RunName,
 		})
 	}
 
@@ -277,8 +285,10 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 	updated, err := c.compareService.UpdateByID(ctx, req.GetId(), &compare.PartialOption{
 		Name:        req.Name,
 		Script:      req.Script,
+		ScriptName:  req.ScriptName,
 		BuildScript: req.BuildScript,
 		RunScript:   req.RunScript,
+		RunName:     req.RunName,
 	})
 	if err != nil {
 		return nil, err
@@ -288,8 +298,10 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 		Id:          *updated.ID,
 		Name:        *updated.Name,
 		Script:      *updated.Script,
+		ScriptName:  *updated.ScriptName,
 		BuildScript: *updated.BuildScript,
 		RunScript:   *updated.RunScript,
+		RunName:     *updated.RunName,
 	}, nil
 }
 
