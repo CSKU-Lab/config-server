@@ -3,11 +3,12 @@ package language
 import "strings"
 
 type Language struct {
-	ID          string `bson:"id"`
-	Name        string `bson:"name"`
-	Version     string `bson:"version"`
-	BuildScript string `bson:"build_script,omitempty"`
-	RunScript   string `bson:"run_script"`
+	ID          string   `bson:"id"`
+	Name        string   `bson:"name"`
+	Version     string   `bson:"version"`
+	BuildScript string   `bson:"build_script,omitempty"`
+	RunScript   string   `bson:"run_script"`
+	FileNames   []string `bson:"file_names"`
 }
 
 type Options struct {
@@ -15,6 +16,7 @@ type Options struct {
 	Version     string
 	BuildScript string
 	RunScript   string
+	FileNames   []string
 }
 
 func New(opts *Options) *Language {
@@ -25,15 +27,17 @@ func New(opts *Options) *Language {
 		Version:     opts.Version,
 		BuildScript: opts.BuildScript,
 		RunScript:   opts.RunScript,
+		FileNames:   opts.FileNames,
 	}
 }
 
 type UpdateLanguage struct {
-	ID          *string `bson:"id"`
-	Name        *string `bson:"name"`
-	Version     *string `bson:"version"`
-	BuildScript *string `bson:"build_script,omitempty"`
-	RunScript   *string `bson:"run_script"`
+	ID          *string   `bson:"id"`
+	Name        *string   `bson:"name"`
+	Version     *string   `bson:"version"`
+	BuildScript *string   `bson:"build_script,omitempty"`
+	RunScript   *string   `bson:"run_script"`
+	FileNames   *[]string `bson:"file_names"`
 }
 
 type PartialOptions struct {
@@ -41,6 +45,7 @@ type PartialOptions struct {
 	Version     *string
 	BuildScript *string
 	RunScript   *string
+	FileNames   *[]string
 }
 
 func NewUpdate(opts *PartialOptions) *UpdateLanguage {
@@ -56,6 +61,7 @@ func NewUpdate(opts *PartialOptions) *UpdateLanguage {
 		Version:     opts.Version,
 		BuildScript: opts.BuildScript,
 		RunScript:   opts.RunScript,
+		FileNames:   opts.FileNames,
 	}
 }
 
