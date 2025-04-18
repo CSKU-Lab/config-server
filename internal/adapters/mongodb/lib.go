@@ -20,7 +20,12 @@ func getUpdatedFields(i any) bson.D {
 			continue
 		}
 
-		fields = append(fields, bson.E{Key: bsonTag, Value: fieldVal.Elem().Interface()})
+		val := fieldVal.Interface()
+		if fieldVal.Kind() == reflect.Ptr {
+			val = fieldVal.Elem().Interface()
+		}
+
+		fields = append(fields, bson.E{Key: bsonTag, Value: val})
 	}
 
 	return fields
