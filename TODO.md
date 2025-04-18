@@ -1,2 +1,2 @@
-- [ ] finish update language by id method 
-- [ ] implement delte langage by id method
+- [X] finish update language by id method 
+- [X] implement delte langage by id method

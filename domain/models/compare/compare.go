@@ -3,20 +3,20 @@ package compare
 import "strings"
 
 type Compare struct {
-	ID          string `bson:"id"`
-	Name        string `bson:"name"`
-	ScriptName  string `bson:"script_name"`
-	Script      string `bson:"script"`
-	BuildScript string `bson:"build_script"`
-	RunScript   string `bson:"run_script"`
-	RunName     string `bson:"run_name"`
-	Description string `bson:"description"`
+	ID          string   `bson:"id"`
+	Name        string   `bson:"name"`
+	FileNames   []string `bson:"file_names"`
+	Script      string   `bson:"script"`
+	BuildScript string   `bson:"build_script"`
+	RunScript   string   `bson:"run_script"`
+	RunName     string   `bson:"run_name"`
+	Description string   `bson:"description"`
 }
 
 type Option struct {
 	Name        string
 	Script      string
-	ScriptName  string
+	FileNames   []string
 	BuildScript string
 	RunScript   string
 	RunName     string
@@ -37,7 +37,7 @@ func New(option *Option) *Compare {
 		ID:          id,
 		Name:        option.Name,
 		Script:      option.Script,
-		ScriptName:  option.ScriptName,
+		FileNames:   option.FileNames,
 		BuildScript: option.BuildScript,
 		RunScript:   option.RunScript,
 		RunName:     option.RunName,
@@ -46,20 +46,20 @@ func New(option *Option) *Compare {
 }
 
 type UpdateCompare struct {
-	ID          *string `bson:"id"`
-	Name        *string `bson:"name"`
-	Script      *string `bson:"script"`
-	ScriptName  *string `bson:"script_name"`
-	BuildScript *string `bson:"build_script"`
-	RunScript   *string `bson:"run_script"`
-	RunName     *string `bson:"run_name"`
-	Description *string `bson:"description"`
+	ID          *string  `bson:"id"`
+	Name        *string  `bson:"name"`
+	Script      *string  `bson:"script"`
+	FileNames   []string `bson:"file_names"`
+	BuildScript *string  `bson:"build_script"`
+	RunScript   *string  `bson:"run_script"`
+	RunName     *string  `bson:"run_name"`
+	Description *string  `bson:"description"`
 }
 
 type PartialOption struct {
 	Name        *string
 	Script      *string
-	ScriptName  *string
+	FileNames   []string
 	BuildScript *string
 	RunScript   *string
 	RunName     *string
@@ -77,7 +77,7 @@ func NewUpdate(option *PartialOption) *UpdateCompare {
 		ID:          id,
 		Name:        option.Name,
 		Script:      option.Script,
-		ScriptName:  option.ScriptName,
+		FileNames:   option.FileNames,
 		BuildScript: option.BuildScript,
 		RunScript:   option.RunScript,
 		RunName:     option.RunName,

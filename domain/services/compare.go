@@ -29,7 +29,7 @@ func (c *compareService) Add(ctx context.Context, body *compare.Option) (*compar
 	compare := compare.New(&compare.Option{
 		Name:        body.Name,
 		Script:      body.Script,
-		ScriptName:  body.ScriptName,
+		FileNames:   body.FileNames,
 		BuildScript: body.BuildScript,
 		RunScript:   body.RunScript,
 		RunName:     body.RunName,
@@ -51,7 +51,7 @@ func (c *compareService) UpdateByID(ctx context.Context, ID string, body *compar
 	updatedFields := compare.NewUpdate(&compare.PartialOption{
 		Name:        body.Name,
 		Script:      body.Script,
-		ScriptName:  body.ScriptName,
+		FileNames:   body.FileNames,
 		BuildScript: body.BuildScript,
 		RunScript:   body.RunScript,
 		RunName:     body.RunName,
