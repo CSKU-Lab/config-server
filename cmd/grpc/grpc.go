@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/CSKU-Lab/config-server/domain/models/compare"
+	"github.com/CSKU-Lab/config-server/domain/models/file"
 	"github.com/CSKU-Lab/config-server/domain/models/language"
 	"github.com/CSKU-Lab/config-server/domain/services"
 	pb "github.com/CSKU-Lab/config-server/genproto/config/v1"
@@ -37,6 +38,11 @@ func main() {
 	client, err := mongo.Connect(options.Client().ApplyURI(uri))
 	if err != nil {
 		log.Fatalln(err)
+	}
+
+	err = client.Ping(context.Background(), nil)
+	if err != nil {
+		log.Fatalln("Failed to ping MongoDB: ", err)
 	}
 
 	db := client.Database("configs")
@@ -109,14 +115,9 @@ func (c *configServiceServer) GetLanguages(ctx context.Context, req *pb.GetLangu
 		if req.IncludeName {
 			name = &language.Name
 		}
-		var version *string = nil
-		if req.IncludeVersion {
-			version = &language.Version
-		}
 		responsesLangauges = append(responsesLangauges, &pb.Language{
 			Id:          language.ID,
 			Name:        name,
-			Version:     version,
 			BuildScript: language.BuildScript,
 			RunScript:   language.RunScript,
 		})
@@ -141,7 +142,6 @@ func (c *configServiceServer) GetLanguage(ctx context.Context, req *pb.GetLangua
 	return &pb.LanguageResponse{
 		Id:          lang.ID,
 		Name:        lang.Name,
-		Version:     lang.Version,
 		BuildScript: &lang.BuildScript,
 		RunScript:   lang.RunScript,
 	}, nil
@@ -150,7 +150,6 @@ func (c *configServiceServer) GetLanguage(ctx context.Context, req *pb.GetLangua
 func (c *configServiceServer) AddLanguage(ctx context.Context, req *pb.AddLanguageRequest) (*pb.LanguageResponse, error) {
 	lang := language.New(&language.Options{
 		Name:        req.GetName(),
-		Version:     req.GetVersion(),
 		BuildScript: req.GetBuildScript(),
 		RunScript:   req.GetRunScript(),
 	})
@@ -163,7 +162,6 @@ func (c *configServiceServer) AddLanguage(ctx context.Context, req *pb.AddLangua
 	return &pb.LanguageResponse{
 		Id:          lang.ID,
 		Name:        lang.Name,
-		Version:     lang.Version,
 		BuildScript: &lang.BuildScript,
 		RunScript:   lang.RunScript,
 	}, nil
@@ -176,7 +174,6 @@ func (c *configServiceServer) UpdateLanguage(ctx context.Context, req *pb.Update
 
 	updated, err := c.langService.UpdateByID(ctx, req.GetId(), &language.PartialOptions{
 		Name:        req.Name,
-		Version:     req.Version,
 		BuildScript: req.BuildScript,
 		RunScript:   req.RunScript,
 	})
@@ -187,7 +184,6 @@ func (c *configServiceServer) UpdateLanguage(ctx context.Context, req *pb.Update
 	return &pb.LanguageResponse{
 		Id:          updated.ID,
 		Name:        updated.Name,
-		Version:     updated.Version,
 		BuildScript: &updated.BuildScript,
 		RunScript:   updated.RunScript,
 	}, nil
@@ -210,7 +206,7 @@ func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompare
 	compare, err := c.compareService.Add(ctx, &compare.Option{
 		Name:        req.GetName(),
 		Script:      req.GetScript(),
-		FileNames:   req.GetFileNames(),
+		Files:       file.FromPB(req.GetFiles()),
 		BuildScript: req.GetBuildScript(),
 		RunScript:   req.GetRunScript(),
 		RunName:     req.GetRunName(),
@@ -223,8 +219,7 @@ func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompare
 	return &pb.CompareResponse{
 		Id:          compare.ID,
 		Name:        compare.Name,
-		Script:      compare.Script,
-		FileNames:   compare.FileNames,
+		Files:       file.ToPB(compare.Files),
 		BuildScript: compare.BuildScript,
 		RunScript:   compare.RunScript,
 		RunName:     compare.RunName,
@@ -245,8 +240,7 @@ func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompare
 	return &pb.CompareResponse{
 		Id:          compare.ID,
 		Name:        compare.Name,
-		Script:      compare.Script,
-		FileNames:   compare.FileNames,
+		Files:       file.ToPB(compare.Files),
 		BuildScript: compare.BuildScript,
 		RunScript:   compare.RunScript,
 		RunName:     compare.RunName,
@@ -265,8 +259,7 @@ func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empt
 		responses = append(responses, &pb.CompareResponse{
 			Id:          compare.ID,
 			Name:        compare.Name,
-			Script:      compare.Script,
-			FileNames:   compare.FileNames,
+			Files:       file.ToPB(compare.Files),
 			BuildScript: compare.BuildScript,
 			RunScript:   compare.RunScript,
 			RunName:     compare.RunName,
@@ -287,7 +280,7 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 	updated, err := c.compareService.UpdateByID(ctx, req.GetId(), &compare.PartialOption{
 		Name:        req.Name,
 		Script:      req.Script,
-		FileNames:   req.FileNames,
+		Files:       file.FromPB(req.GetFiles()),
 		BuildScript: req.BuildScript,
 		RunScript:   req.RunScript,
 		RunName:     req.RunName,
@@ -300,8 +293,7 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 	return &pb.CompareResponse{
 		Id:          updated.ID,
 		Name:        updated.Name,
-		Script:      updated.Script,
-		FileNames:   updated.FileNames,
+		Files:       file.ToPB(updated.Files),
 		BuildScript: updated.BuildScript,
 		RunScript:   updated.RunScript,
 		RunName:     updated.RunName,

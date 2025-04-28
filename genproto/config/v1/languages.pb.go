@@ -66,11 +66,10 @@ func (x *GetLanguagesResponse) GetLanguages() []*Language {
 }
 
 type GetLanguagesRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	IncludeName    bool                   `protobuf:"varint,1,opt,name=include_name,json=includeName,proto3" json:"include_name,omitempty"`
-	IncludeVersion bool                   `protobuf:"varint,2,opt,name=include_version,json=includeVersion,proto3" json:"include_version,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	IncludeName   bool                   `protobuf:"varint,1,opt,name=include_name,json=includeName,proto3" json:"include_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetLanguagesRequest) Reset() {
@@ -110,20 +109,12 @@ func (x *GetLanguagesRequest) GetIncludeName() bool {
 	return false
 }
 
-func (x *GetLanguagesRequest) GetIncludeVersion() bool {
-	if x != nil {
-		return x.IncludeVersion
-	}
-	return false
-}
-
 type GetLanguageRequest struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Id             string                 `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
-	IncludeName    bool                   `protobuf:"varint,5,opt,name=include_name,json=includeName,proto3" json:"include_name,omitempty"`
-	IncludeVersion bool                   `protobuf:"varint,6,opt,name=include_version,json=includeVersion,proto3" json:"include_version,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,4,opt,name=id,proto3" json:"id,omitempty"`
+	IncludeName   bool                   `protobuf:"varint,5,opt,name=include_name,json=includeName,proto3" json:"include_name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetLanguageRequest) Reset() {
@@ -170,18 +161,10 @@ func (x *GetLanguageRequest) GetIncludeName() bool {
 	return false
 }
 
-func (x *GetLanguageRequest) GetIncludeVersion() bool {
-	if x != nil {
-		return x.IncludeVersion
-	}
-	return false
-}
-
 type Language struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          *string                `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Version       *string                `protobuf:"bytes,3,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	BuildScript   string                 `protobuf:"bytes,4,opt,name=build_script,json=buildScript,proto3" json:"build_script,omitempty"`
 	RunScript     string                 `protobuf:"bytes,5,opt,name=run_script,json=runScript,proto3" json:"run_script,omitempty"`
 	FileNames     []string               `protobuf:"bytes,6,rep,name=file_names,json=fileNames,proto3" json:"file_names,omitempty"`
@@ -233,13 +216,6 @@ func (x *Language) GetName() string {
 	return ""
 }
 
-func (x *Language) GetVersion() string {
-	if x != nil && x.Version != nil {
-		return *x.Version
-	}
-	return ""
-}
-
 func (x *Language) GetBuildScript() string {
 	if x != nil {
 		return x.BuildScript
@@ -265,7 +241,6 @@ type LanguageResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Version       string                 `protobuf:"bytes,3,opt,name=version,proto3" json:"version,omitempty"`
 	BuildScript   *string                `protobuf:"bytes,4,opt,name=build_script,json=buildScript,proto3,oneof" json:"build_script,omitempty"`
 	RunScript     string                 `protobuf:"bytes,5,opt,name=run_script,json=runScript,proto3" json:"run_script,omitempty"`
 	FileNames     []string               `protobuf:"bytes,6,rep,name=file_names,json=fileNames,proto3" json:"file_names,omitempty"`
@@ -317,13 +292,6 @@ func (x *LanguageResponse) GetName() string {
 	return ""
 }
 
-func (x *LanguageResponse) GetVersion() string {
-	if x != nil {
-		return x.Version
-	}
-	return ""
-}
-
 func (x *LanguageResponse) GetBuildScript() string {
 	if x != nil && x.BuildScript != nil {
 		return *x.BuildScript
@@ -348,7 +316,6 @@ func (x *LanguageResponse) GetFileNames() []string {
 type AddLanguageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Version       string                 `protobuf:"bytes,2,opt,name=version,proto3" json:"version,omitempty"`
 	BuildScript   *string                `protobuf:"bytes,3,opt,name=build_script,json=buildScript,proto3,oneof" json:"build_script,omitempty"`
 	RunScript     string                 `protobuf:"bytes,4,opt,name=run_script,json=runScript,proto3" json:"run_script,omitempty"`
 	FileNames     []string               `protobuf:"bytes,5,rep,name=file_names,json=fileNames,proto3" json:"file_names,omitempty"`
@@ -393,13 +360,6 @@ func (x *AddLanguageRequest) GetName() string {
 	return ""
 }
 
-func (x *AddLanguageRequest) GetVersion() string {
-	if x != nil {
-		return x.Version
-	}
-	return ""
-}
-
 func (x *AddLanguageRequest) GetBuildScript() string {
 	if x != nil && x.BuildScript != nil {
 		return *x.BuildScript
@@ -425,7 +385,6 @@ type UpdateLanguageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Name          *string                `protobuf:"bytes,2,opt,name=name,proto3,oneof" json:"name,omitempty"`
-	Version       *string                `protobuf:"bytes,3,opt,name=version,proto3,oneof" json:"version,omitempty"`
 	BuildScript   *string                `protobuf:"bytes,4,opt,name=build_script,json=buildScript,proto3,oneof" json:"build_script,omitempty"`
 	RunScript     *string                `protobuf:"bytes,5,opt,name=run_script,json=runScript,proto3,oneof" json:"run_script,omitempty"`
 	FileNames     []string               `protobuf:"bytes,6,rep,name=file_names,json=fileNames,proto3" json:"file_names,omitempty"`
@@ -473,13 +432,6 @@ func (x *UpdateLanguageRequest) GetId() string {
 func (x *UpdateLanguageRequest) GetName() string {
 	if x != nil && x.Name != nil {
 		return *x.Name
-	}
-	return ""
-}
-
-func (x *UpdateLanguageRequest) GetVersion() string {
-	if x != nil && x.Version != nil {
-		return *x.Version
 	}
 	return ""
 }
@@ -555,59 +507,49 @@ const file_config_v1_languages_proto_rawDesc = "" +
 	"\n" +
 	"\x19config/v1/languages.proto\x12\tconfig.v1\"I\n" +
 	"\x14GetLanguagesResponse\x121\n" +
-	"\tlanguages\x18\x01 \x03(\v2\x13.config.v1.LanguageR\tlanguages\"a\n" +
+	"\tlanguages\x18\x01 \x03(\v2\x13.config.v1.LanguageR\tlanguages\">\n" +
 	"\x13GetLanguagesRequest\x12!\n" +
-	"\finclude_name\x18\x01 \x01(\bR\vincludeName\x12'\n" +
-	"\x0finclude_version\x18\x02 \x01(\bR\x0eincludeVersion\"\x82\x01\n" +
+	"\finclude_name\x18\x01 \x01(\bR\vincludeNameJ\x04\b\x02\x10\x03\"_\n" +
 	"\x12GetLanguageRequest\x12\x0e\n" +
 	"\x02id\x18\x04 \x01(\tR\x02id\x12!\n" +
-	"\finclude_name\x18\x05 \x01(\bR\vincludeName\x12'\n" +
-	"\x0finclude_version\x18\x06 \x01(\bR\x0eincludeVersionJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04\"\xc8\x01\n" +
+	"\finclude_name\x18\x05 \x01(\bR\vincludeNameJ\x04\b\x01\x10\x02J\x04\b\x02\x10\x03J\x04\b\x03\x10\x04J\x04\b\x06\x10\a\"\xa3\x01\n" +
 	"\bLanguage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\x04name\x18\x02 \x01(\tH\x00R\x04name\x88\x01\x01\x12\x1d\n" +
-	"\aversion\x18\x03 \x01(\tH\x01R\aversion\x88\x01\x01\x12!\n" +
+	"\x04name\x18\x02 \x01(\tH\x00R\x04name\x88\x01\x01\x12!\n" +
 	"\fbuild_script\x18\x04 \x01(\tR\vbuildScript\x12\x1d\n" +
 	"\n" +
 	"run_script\x18\x05 \x01(\tR\trunScript\x12\x1d\n" +
 	"\n" +
 	"file_names\x18\x06 \x03(\tR\tfileNamesB\a\n" +
-	"\x05_nameB\n" +
-	"\n" +
-	"\b_version\"\xc7\x01\n" +
+	"\x05_nameJ\x04\b\x03\x10\x04\"\xb3\x01\n" +
 	"\x10LanguageResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
-	"\x04name\x18\x02 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x03 \x01(\tR\aversion\x12&\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12&\n" +
 	"\fbuild_script\x18\x04 \x01(\tH\x00R\vbuildScript\x88\x01\x01\x12\x1d\n" +
 	"\n" +
 	"run_script\x18\x05 \x01(\tR\trunScript\x12\x1d\n" +
 	"\n" +
 	"file_names\x18\x06 \x03(\tR\tfileNamesB\x0f\n" +
-	"\r_build_script\"\xb9\x01\n" +
+	"\r_build_scriptJ\x04\b\x03\x10\x04\"\xa5\x01\n" +
 	"\x12AddLanguageRequest\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12\x18\n" +
-	"\aversion\x18\x02 \x01(\tR\aversion\x12&\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12&\n" +
 	"\fbuild_script\x18\x03 \x01(\tH\x00R\vbuildScript\x88\x01\x01\x12\x1d\n" +
 	"\n" +
 	"run_script\x18\x04 \x01(\tR\trunScript\x12\x1d\n" +
 	"\n" +
 	"file_names\x18\x05 \x03(\tR\tfileNamesB\x0f\n" +
-	"\r_build_script\"\xff\x01\n" +
+	"\r_build_scriptJ\x04\b\x02\x10\x03\"\xda\x01\n" +
 	"\x15UpdateLanguageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
-	"\x04name\x18\x02 \x01(\tH\x00R\x04name\x88\x01\x01\x12\x1d\n" +
-	"\aversion\x18\x03 \x01(\tH\x01R\aversion\x88\x01\x01\x12&\n" +
-	"\fbuild_script\x18\x04 \x01(\tH\x02R\vbuildScript\x88\x01\x01\x12\"\n" +
+	"\x04name\x18\x02 \x01(\tH\x00R\x04name\x88\x01\x01\x12&\n" +
+	"\fbuild_script\x18\x04 \x01(\tH\x01R\vbuildScript\x88\x01\x01\x12\"\n" +
 	"\n" +
-	"run_script\x18\x05 \x01(\tH\x03R\trunScript\x88\x01\x01\x12\x1d\n" +
+	"run_script\x18\x05 \x01(\tH\x02R\trunScript\x88\x01\x01\x12\x1d\n" +
 	"\n" +
 	"file_names\x18\x06 \x03(\tR\tfileNamesB\a\n" +
-	"\x05_nameB\n" +
-	"\n" +
-	"\b_versionB\x0f\n" +
+	"\x05_nameB\x0f\n" +
 	"\r_build_scriptB\r\n" +
-	"\v_run_script\"'\n" +
+	"\v_run_scriptJ\x04\b\x03\x10\x04\"'\n" +
 	"\x15DeleteLanguageRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02idB\x96\x01\n" +
 	"\rcom.config.v1B\x0eLanguagesProtoP\x01Z0github.com/CSKU-Lab/config-server/grpc/config/v1\xa2\x02\x03CXX\xaa\x02\tConfig.V1\xca\x02\tConfig\\V1\xe2\x02\x15Config\\V1\\GPBMetadata\xea\x02\n" +

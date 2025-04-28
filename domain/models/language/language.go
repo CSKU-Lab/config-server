@@ -1,11 +1,14 @@
 package language
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+)
 
 type Language struct {
-	ID          string   `bson:"id"`
+	ID          string   `bson:"_id"`
 	Name        string   `bson:"name"`
-	Version     string   `bson:"version"`
+	Tags        []string `bson:"tags"`
 	BuildScript string   `bson:"build_script,omitempty"`
 	RunScript   string   `bson:"run_script"`
 	FileNames   []string `bson:"file_names"`
@@ -13,18 +16,18 @@ type Language struct {
 
 type Options struct {
 	Name        string
-	Version     string
+	Tags        []string
 	BuildScript string
 	RunScript   string
 	FileNames   []string
 }
 
 func New(opts *Options) *Language {
-	id := genID(opts.Name, opts.Version)
+	id := genID(opts.Name)
 	return &Language{
 		ID:          id,
 		Name:        opts.Name,
-		Version:     opts.Version,
+		Tags:        opts.Tags,
 		BuildScript: opts.BuildScript,
 		RunScript:   opts.RunScript,
 		FileNames:   opts.FileNames,
@@ -32,9 +35,9 @@ func New(opts *Options) *Language {
 }
 
 type UpdateLanguage struct {
-	ID          *string   `bson:"id"`
+	ID          *string   `bson:"_id"`
 	Name        *string   `bson:"name"`
-	Version     *string   `bson:"version"`
+	Tags        *[]string `bson:"tags"`
 	BuildScript *string   `bson:"build_script,omitempty"`
 	RunScript   *string   `bson:"run_script"`
 	FileNames   *[]string `bson:"file_names"`
@@ -42,7 +45,7 @@ type UpdateLanguage struct {
 
 type PartialOptions struct {
 	Name        *string
-	Version     *string
+	Tags        *[]string
 	BuildScript *string
 	RunScript   *string
 	FileNames   *[]string
@@ -50,25 +53,25 @@ type PartialOptions struct {
 
 func NewUpdate(opts *PartialOptions) *UpdateLanguage {
 	var id *string = nil
-	if opts.Name != nil && opts.Version != nil {
-		_id := genID(*opts.Name, *opts.Version)
+	if opts.Name != nil {
+		_id := genID(*opts.Name)
 		id = &_id
 	}
 
 	return &UpdateLanguage{
 		ID:          id,
 		Name:        opts.Name,
-		Version:     opts.Version,
+		Tags:        opts.Tags,
 		BuildScript: opts.BuildScript,
 		RunScript:   opts.RunScript,
 		FileNames:   opts.FileNames,
 	}
 }
 
-func genID(name, version string) string {
-	id := ""
-	lowerName := strings.ToLower(name)
-	id = strings.Join([]string{lowerName, version}, "_")
+func genID(name string) string {
+	re := regexp.MustCompile(`[^a-zA-Z0-9]+`)
+	cleanedSpecialChars := re.ReplaceAllString(name, "_")
+	trimmed := strings.Trim(cleanedSpecialChars, "_")
 
-	return id
+	return strings.ToLower(trimmed)
 }

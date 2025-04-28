@@ -47,13 +47,8 @@ func (l *languageService) UpdateByID(ctx context.Context, ID string, body *langu
 		body.Name = &lang.Name
 	}
 
-	if body.Version == nil {
-		body.Version = &lang.Version
-	}
-
 	modLang := language.NewUpdate(&language.PartialOptions{
 		Name:        body.Name,
-		Version:     body.Version,
 		BuildScript: body.BuildScript,
 		RunScript:   body.RunScript,
 	})
@@ -76,7 +71,6 @@ func (l *languageService) UpdateByID(ctx context.Context, ID string, body *langu
 	return &language.Language{
 		ID:          *modLang.ID,
 		Name:        *modLang.Name,
-		Version:     *modLang.Version,
 		BuildScript: buildScript,
 		RunScript:   runScript,
 	}, nil

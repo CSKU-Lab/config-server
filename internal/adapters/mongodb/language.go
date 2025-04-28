@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/CSKU-Lab/config-server/domain/cerrors"
-	"github.com/CSKU-Lab/config-server/domain/repositories"
 	"github.com/CSKU-Lab/config-server/domain/models/language"
+	"github.com/CSKU-Lab/config-server/domain/repositories"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -51,7 +51,7 @@ func (l *languageRepo) GetAll(ctx context.Context) ([]language.Language, error) 
 
 func (l *languageRepo) GetByID(ctx context.Context, ID string) (*language.Language, error) {
 	var lang language.Language
-	err := l.col.FindOne(ctx, bson.M{"id": ID}).Decode(&lang)
+	err := l.col.FindOne(ctx, bson.M{"_id": ID}).Decode(&lang)
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (l *languageRepo) GetByID(ctx context.Context, ID string) (*language.Langua
 func (l *languageRepo) UpdateByID(ctx context.Context, ID string, body *language.UpdateLanguage) error {
 	updatedFields := getUpdatedFields(body)
 	fmt.Println(updatedFields)
-	_, err := l.col.UpdateOne(ctx, bson.M{"id": ID}, bson.D{{"$set", updatedFields}})
+	_, err := l.col.UpdateOne(ctx, bson.M{"_id": ID}, bson.D{{"$set", updatedFields}})
 	if err != nil {
 		fmt.Printf("%T", err)
 		return err
@@ -71,6 +71,6 @@ func (l *languageRepo) UpdateByID(ctx context.Context, ID string, body *language
 }
 
 func (l *languageRepo) DeleteByID(ctx context.Context, ID string) error {
-	_, err := l.col.DeleteOne(ctx, bson.M{"id": ID})
+	_, err := l.col.DeleteOne(ctx, bson.M{"_id": ID})
 	return err
 }

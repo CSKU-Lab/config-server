@@ -1,22 +1,26 @@
 package compare
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/CSKU-Lab/config-server/domain/models/file"
+)
 
 type Compare struct {
-	ID          string   `bson:"id"`
-	Name        string   `bson:"name"`
-	FileNames   []string `bson:"file_names"`
-	Script      string   `bson:"script"`
-	BuildScript string   `bson:"build_script"`
-	RunScript   string   `bson:"run_script"`
-	RunName     string   `bson:"run_name"`
-	Description string   `bson:"description"`
+	ID          string      `bson:"_id"`
+	Name        string      `bson:"name"`
+	Files       []file.File `bson:"files"`
+	Script      string      `bson:"script"`
+	BuildScript string      `bson:"build_script"`
+	RunScript   string      `bson:"run_script"`
+	RunName     string      `bson:"run_name"`
+	Description string      `bson:"description"`
 }
 
 type Option struct {
 	Name        string
 	Script      string
-	FileNames   []string
+	Files       []file.File
 	BuildScript string
 	RunScript   string
 	RunName     string
@@ -37,7 +41,7 @@ func New(option *Option) *Compare {
 		ID:          id,
 		Name:        option.Name,
 		Script:      option.Script,
-		FileNames:   option.FileNames,
+		Files:       option.Files,
 		BuildScript: option.BuildScript,
 		RunScript:   option.RunScript,
 		RunName:     option.RunName,
@@ -46,20 +50,20 @@ func New(option *Option) *Compare {
 }
 
 type UpdateCompare struct {
-	ID          *string  `bson:"id"`
-	Name        *string  `bson:"name"`
-	Script      *string  `bson:"script"`
-	FileNames   []string `bson:"file_names"`
-	BuildScript *string  `bson:"build_script"`
-	RunScript   *string  `bson:"run_script"`
-	RunName     *string  `bson:"run_name"`
-	Description *string  `bson:"description"`
+	ID          *string     `bson:"_id"`
+	Name        *string     `bson:"name"`
+	Script      *string     `bson:"script"`
+	Files       []file.File `bson:"files"`
+	BuildScript *string     `bson:"build_script"`
+	RunScript   *string     `bson:"run_script"`
+	RunName     *string     `bson:"run_name"`
+	Description *string     `bson:"description"`
 }
 
 type PartialOption struct {
 	Name        *string
 	Script      *string
-	FileNames   []string
+	Files       []file.File
 	BuildScript *string
 	RunScript   *string
 	RunName     *string
@@ -77,7 +81,7 @@ func NewUpdate(option *PartialOption) *UpdateCompare {
 		ID:          id,
 		Name:        option.Name,
 		Script:      option.Script,
-		FileNames:   option.FileNames,
+		Files:       option.Files,
 		BuildScript: option.BuildScript,
 		RunScript:   option.RunScript,
 		RunName:     option.RunName,

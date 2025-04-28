@@ -13,12 +13,16 @@ import (
 )
 
 type compareRepo struct {
-	col *mongo.Collection
+	col        *mongo.Collection
+	dynamicCol func(path string) *mongo.Collection
 }
 
 func NewCompareRepo(db *mongo.Database) repositories.CompareRepository {
 	return &compareRepo{
 		col: db.Collection("compares"),
+		dynamicCol: func(path string) *mongo.Collection {
+			return db.Collection(fmt.Sprintf("compares/%s", path))
+		},
 	}
 }
 
