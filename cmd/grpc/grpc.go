@@ -12,7 +12,7 @@ import (
 
 	"github.com/CSKU-Lab/config-server/domain/models/compare"
 	"github.com/CSKU-Lab/config-server/domain/models/file"
-	"github.com/CSKU-Lab/config-server/domain/models/language"
+	"github.com/CSKU-Lab/config-server/domain/models/runner"
 	"github.com/CSKU-Lab/config-server/domain/services"
 	pb "github.com/CSKU-Lab/config-server/genproto/config/v1"
 	"github.com/CSKU-Lab/config-server/internal/adapters/mongodb"
@@ -46,8 +46,8 @@ func main() {
 	}
 
 	db := client.Database("configs")
-	languageRepo := mongodb.NewLanguageRepo(db)
-	languageService := services.NewLanguageService(languageRepo)
+	runnerRepo := mongodb.NewRunnerRepo(db)
+	runnerService := services.NewLanguageService(runnerRepo)
 
 	compareRepo := mongodb.NewCompareRepo(db)
 	compareService := services.NewCompareService(compareRepo)
@@ -58,7 +58,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterConfigServiceServer(s, newServer(languageService, compareService))
+	pb.RegisterConfigServiceServer(s, newServer(runnerService, compareService))
 	reflection.Register(s)
 	log.Println("gRPC ConfigService registered")
 
@@ -92,87 +92,87 @@ func main() {
 
 type configServiceServer struct {
 	pb.UnimplementedConfigServiceServer
-	langService    services.LanguageService
+	runnerService  services.RunnerService
 	compareService services.CompareService
 }
 
-func newServer(langService services.LanguageService, compareService services.CompareService) *configServiceServer {
+func newServer(runnerService services.RunnerService, compareService services.CompareService) *configServiceServer {
 	return &configServiceServer{
-		langService:    langService,
+		runnerService:  runnerService,
 		compareService: compareService,
 	}
 }
 
-func (c *configServiceServer) GetLanguages(ctx context.Context, req *pb.GetLanguagesRequest) (*pb.GetLanguagesResponse, error) {
-	responsesLangauges := []*pb.Language{}
-	langauges, err := c.langService.GetAll(ctx)
+func (c *configServiceServer) GetRunners(ctx context.Context, req *pb.GetRunnersRequest) (*pb.GetRunnersResponse, error) {
+	responsesRunners := []*pb.Runner{}
+	runners, err := c.runnerService.GetAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, language := range langauges {
+	for _, runner := range runners {
 		var name *string = nil
 		if req.IncludeName {
-			name = &language.Name
+			name = &runner.Name
 		}
-		responsesLangauges = append(responsesLangauges, &pb.Language{
-			Id:          language.ID,
+		responsesRunners = append(responsesRunners, &pb.Runner{
+			Id:          runner.ID,
 			Name:        name,
-			BuildScript: language.BuildScript,
-			RunScript:   language.RunScript,
+			BuildScript: runner.BuildScript,
+			RunScript:   runner.RunScript,
 		})
 	}
 
-	return &pb.GetLanguagesResponse{
-		Languages: responsesLangauges,
+	return &pb.GetRunnersResponse{
+		Runners: responsesRunners,
 	}, nil
 
 }
 
-func (c *configServiceServer) GetLanguage(ctx context.Context, req *pb.GetLanguageRequest) (*pb.LanguageResponse, error) {
+func (c *configServiceServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (*pb.RunnerResponse, error) {
 	if req.GetId() == "" {
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	lang, err := c.langService.GetByID(ctx, req.GetId())
+	runner, err := c.runnerService.GetByID(ctx, req.GetId())
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.LanguageResponse{
-		Id:          lang.ID,
-		Name:        lang.Name,
-		BuildScript: &lang.BuildScript,
-		RunScript:   lang.RunScript,
+	return &pb.RunnerResponse{
+		Id:          runner.ID,
+		Name:        runner.Name,
+		BuildScript: &runner.BuildScript,
+		RunScript:   runner.RunScript,
 	}, nil
 }
 
-func (c *configServiceServer) AddLanguage(ctx context.Context, req *pb.AddLanguageRequest) (*pb.LanguageResponse, error) {
-	lang := language.New(&language.Options{
+func (c *configServiceServer) AddRunner(ctx context.Context, req *pb.AddRunnerRequest) (*pb.RunnerResponse, error) {
+	runner := runner.New(&runner.Options{
 		Name:        req.GetName(),
 		BuildScript: req.GetBuildScript(),
 		RunScript:   req.GetRunScript(),
 	})
 
-	err := c.langService.Add(ctx, lang)
+	err := c.runnerService.Add(ctx, runner)
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.LanguageResponse{
-		Id:          lang.ID,
-		Name:        lang.Name,
-		BuildScript: &lang.BuildScript,
-		RunScript:   lang.RunScript,
+	return &pb.RunnerResponse{
+		Id:          runner.ID,
+		Name:        runner.Name,
+		BuildScript: &runner.BuildScript,
+		RunScript:   runner.RunScript,
 	}, nil
 }
 
-func (c *configServiceServer) UpdateLanguage(ctx context.Context, req *pb.UpdateLanguageRequest) (*pb.LanguageResponse, error) {
+func (c *configServiceServer) UpdateRunner(ctx context.Context, req *pb.UpdateRunnerRequest) (*pb.RunnerResponse, error) {
 	if req.GetId() == "" {
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	updated, err := c.langService.UpdateByID(ctx, req.GetId(), &language.PartialOptions{
+	updated, err := c.runnerService.UpdateByID(ctx, req.GetId(), &runner.PartialOptions{
 		Name:        req.Name,
 		BuildScript: req.BuildScript,
 		RunScript:   req.RunScript,
@@ -181,7 +181,7 @@ func (c *configServiceServer) UpdateLanguage(ctx context.Context, req *pb.Update
 		return nil, err
 	}
 
-	return &pb.LanguageResponse{
+	return &pb.RunnerResponse{
 		Id:          updated.ID,
 		Name:        updated.Name,
 		BuildScript: &updated.BuildScript,
@@ -189,12 +189,12 @@ func (c *configServiceServer) UpdateLanguage(ctx context.Context, req *pb.Update
 	}, nil
 }
 
-func (c *configServiceServer) DeleteLanguage(ctx context.Context, req *pb.DeleteLanguageRequest) (*emptypb.Empty, error) {
+func (c *configServiceServer) DeleteRunner(ctx context.Context, req *pb.DeleteRunnerRequest) (*emptypb.Empty, error) {
 	if req.GetId() == "" {
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	err := c.langService.DeleteByID(ctx, req.GetId())
+	err := c.runnerService.DeleteByID(ctx, req.GetId())
 	if err != nil {
 		return nil, err
 	}

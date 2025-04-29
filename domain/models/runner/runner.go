@@ -1,17 +1,16 @@
-package language
+package runner
 
 import (
 	"regexp"
 	"strings"
 )
 
-type Language struct {
+type Runner struct {
 	ID          string   `bson:"_id"`
 	Name        string   `bson:"name"`
 	Tags        []string `bson:"tags"`
 	BuildScript string   `bson:"build_script,omitempty"`
 	RunScript   string   `bson:"run_script"`
-	FileNames   []string `bson:"file_names"`
 }
 
 type Options struct {
@@ -19,28 +18,25 @@ type Options struct {
 	Tags        []string
 	BuildScript string
 	RunScript   string
-	FileNames   []string
 }
 
-func New(opts *Options) *Language {
+func New(opts *Options) *Runner {
 	id := genID(opts.Name)
-	return &Language{
+	return &Runner{
 		ID:          id,
 		Name:        opts.Name,
 		Tags:        opts.Tags,
 		BuildScript: opts.BuildScript,
 		RunScript:   opts.RunScript,
-		FileNames:   opts.FileNames,
 	}
 }
 
-type UpdateLanguage struct {
+type UpdateRunner struct {
 	ID          *string   `bson:"_id"`
 	Name        *string   `bson:"name"`
 	Tags        *[]string `bson:"tags"`
 	BuildScript *string   `bson:"build_script,omitempty"`
 	RunScript   *string   `bson:"run_script"`
-	FileNames   *[]string `bson:"file_names"`
 }
 
 type PartialOptions struct {
@@ -48,23 +44,21 @@ type PartialOptions struct {
 	Tags        *[]string
 	BuildScript *string
 	RunScript   *string
-	FileNames   *[]string
 }
 
-func NewUpdate(opts *PartialOptions) *UpdateLanguage {
+func NewUpdate(opts *PartialOptions) *UpdateRunner {
 	var id *string = nil
 	if opts.Name != nil {
 		_id := genID(*opts.Name)
 		id = &_id
 	}
 
-	return &UpdateLanguage{
+	return &UpdateRunner{
 		ID:          id,
 		Name:        opts.Name,
 		Tags:        opts.Tags,
 		BuildScript: opts.BuildScript,
 		RunScript:   opts.RunScript,
-		FileNames:   opts.FileNames,
 	}
 }
 
