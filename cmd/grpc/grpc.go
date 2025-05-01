@@ -47,7 +47,7 @@ func main() {
 
 	db := client.Database("configs")
 	runnerRepo := mongodb.NewRunnerRepo(db)
-	runnerService := services.NewLanguageService(runnerRepo)
+	runnerService := services.NewRunnerService(runnerRepo)
 
 	compareRepo := mongodb.NewCompareRepo(db)
 	compareService := services.NewCompareService(compareRepo)

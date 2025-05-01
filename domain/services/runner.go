@@ -19,7 +19,7 @@ type RunnerService interface {
 	DeleteByID(ctx context.Context, ID string) error
 }
 
-func NewLanguageService(repo repositories.RunnerRepository) *runnerService {
+func NewRunnerService(repo repositories.RunnerRepository) *runnerService {
 	return &runnerService{
 		repo: repo,
 	}
@@ -38,13 +38,13 @@ func (l *runnerService) GetByID(ctx context.Context, ID string) (*runner.Runner,
 }
 
 func (l *runnerService) UpdateByID(ctx context.Context, ID string, body *runner.PartialOptions) (*runner.Runner, error) {
-	lang, err := l.repo.GetByID(ctx, ID)
+	_runner, err := l.repo.GetByID(ctx, ID)
 	if err != nil {
 		return nil, err
 	}
 
 	if body.Name == nil {
-		body.Name = &lang.Name
+		body.Name = &_runner.Name
 	}
 
 	modRunner := runner.NewUpdate(&runner.PartialOptions{
@@ -58,12 +58,12 @@ func (l *runnerService) UpdateByID(ctx context.Context, ID string, body *runner.
 		return nil, err
 	}
 
-	buildScript := lang.BuildScript
+	buildScript := _runner.BuildScript
 	if body.BuildScript != nil {
 		buildScript = *body.BuildScript
 	}
 
-	runScript := lang.BuildScript
+	runScript := _runner.BuildScript
 	if body.RunScript != nil {
 		runScript = *body.RunScript
 	}
