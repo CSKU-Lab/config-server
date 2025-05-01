@@ -10,7 +10,6 @@ type Compare struct {
 	ID          string      `bson:"_id"`
 	Name        string      `bson:"name"`
 	Files       []file.File `bson:"files"`
-	Script      string      `bson:"script"`
 	BuildScript string      `bson:"build_script"`
 	RunScript   string      `bson:"run_script"`
 	RunName     string      `bson:"run_name"`
@@ -40,7 +39,6 @@ func New(option *Option) *Compare {
 	return &Compare{
 		ID:          id,
 		Name:        option.Name,
-		Script:      option.Script,
 		Files:       option.Files,
 		BuildScript: option.BuildScript,
 		RunScript:   option.RunScript,
@@ -52,7 +50,6 @@ func New(option *Option) *Compare {
 type UpdateCompare struct {
 	ID          *string     `bson:"_id"`
 	Name        *string     `bson:"name"`
-	Script      *string     `bson:"script"`
 	Files       []file.File `bson:"files"`
 	BuildScript *string     `bson:"build_script"`
 	RunScript   *string     `bson:"run_script"`
@@ -62,7 +59,6 @@ type UpdateCompare struct {
 
 type PartialOption struct {
 	Name        *string
-	Script      *string
 	Files       []file.File
 	BuildScript *string
 	RunScript   *string
@@ -80,7 +76,6 @@ func NewUpdate(option *PartialOption) *UpdateCompare {
 	return &UpdateCompare{
 		ID:          id,
 		Name:        option.Name,
-		Script:      option.Script,
 		Files:       option.Files,
 		BuildScript: option.BuildScript,
 		RunScript:   option.RunScript,

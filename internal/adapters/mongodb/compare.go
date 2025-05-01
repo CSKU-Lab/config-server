@@ -55,7 +55,7 @@ func (c *compareRepo) GetAll(ctx context.Context) ([]compare.Compare, error) {
 
 func (c *compareRepo) GetByID(ctx context.Context, ID string) (*compare.Compare, error) {
 	var compare compare.Compare
-	err := c.col.FindOne(ctx, bson.M{"id": ID}).Decode(&compare)
+	err := c.col.FindOne(ctx, bson.M{"_id": ID}).Decode(&compare)
 	if err != nil {
 		return nil, cerrors.New(cerrors.CANNOT_GET_DATA)
 	}
@@ -64,9 +64,8 @@ func (c *compareRepo) GetByID(ctx context.Context, ID string) (*compare.Compare,
 
 func (c *compareRepo) UpdateByID(ctx context.Context, ID string, body *compare.UpdateCompare) error {
 	updatedFields := getUpdatedFields(body)
-	_, err := c.col.UpdateOne(ctx, bson.M{"id": ID}, bson.D{{Key: "$set", Value: updatedFields}})
+	_, err := c.col.UpdateOne(ctx, bson.M{"_id": ID}, bson.D{{Key: "$set", Value: updatedFields}})
 	if err != nil {
-		fmt.Printf("%T", err)
 		return err
 	}
 
@@ -74,6 +73,6 @@ func (c *compareRepo) UpdateByID(ctx context.Context, ID string, body *compare.U
 }
 
 func (c *compareRepo) DeleteByID(ctx context.Context, ID string) error {
-	_, err := c.col.DeleteOne(ctx, bson.M{"id": ID})
+	_, err := c.col.DeleteOne(ctx, bson.M{"_id": ID})
 	return err
 }

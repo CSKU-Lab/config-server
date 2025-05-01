@@ -279,7 +279,6 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 
 	updated, err := c.compareService.UpdateByID(ctx, req.GetId(), &compare.PartialOption{
 		Name:        req.Name,
-		Script:      req.Script,
 		Files:       file.FromPB(req.GetFiles()),
 		BuildScript: req.BuildScript,
 		RunScript:   req.RunScript,

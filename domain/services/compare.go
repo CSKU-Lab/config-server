@@ -50,7 +50,6 @@ func (c *compareService) GetByID(ctx context.Context, ID string) (*compare.Compa
 func (c *compareService) UpdateByID(ctx context.Context, ID string, body *compare.PartialOption) (*compare.Compare, error) {
 	updatedFields := compare.NewUpdate(&compare.PartialOption{
 		Name:        body.Name,
-		Script:      body.Script,
 		Files:       body.Files,
 		BuildScript: body.BuildScript,
 		RunScript:   body.RunScript,
