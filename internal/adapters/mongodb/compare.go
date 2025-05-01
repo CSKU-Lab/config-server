@@ -43,6 +43,7 @@ func (c *compareRepo) GetAll(ctx context.Context) ([]compare.Compare, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Cannot get compares : %v", err)
 	}
+	defer cursor.Close(ctx)
 
 	var compares []compare.Compare
 	err = cursor.All(ctx, &compares)

@@ -39,6 +39,7 @@ func (l *runnerRepo) GetAll(ctx context.Context) ([]runner.Runner, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Cannot get runners : %v", err)
 	}
+	defer cursor.Close(ctx)
 
 	var runners []runner.Runner
 	err = cursor.All(ctx, &runners)
