@@ -52,7 +52,7 @@ func main() {
 	compareRepo := mongodb.NewCompareRepo(db)
 	compareService := services.NewCompareService(compareRepo)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%s", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", port))
 	if err != nil {
 		log.Fatalln("failed to listen: ", err)
 	}
