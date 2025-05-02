@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/CSKU-Lab/config-server/configs"
 	"github.com/CSKU-Lab/config-server/domain/models/compare"
 	"github.com/CSKU-Lab/config-server/domain/models/file"
 	"github.com/CSKU-Lab/config-server/domain/models/runner"
@@ -24,18 +25,9 @@ import (
 )
 
 func main() {
-	uri := os.Getenv("MONGO_URI")
-	if uri == "" {
-		fmt.Println("You forget to set the MONGO_URI environment variable!")
-		os.Exit(1)
-	}
+	env := configs.NewEnv()
 
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+	client, err := mongo.Connect(options.Client().ApplyURI(env.GetMongoURI()))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -52,7 +44,7 @@ func main() {
 	compareRepo := mongodb.NewCompareRepo(db)
 	compareService := services.NewCompareService(compareRepo)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", env.GetPort()))
 	if err != nil {
 		log.Fatalln("failed to listen: ", err)
 	}

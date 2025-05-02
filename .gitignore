@@ -1,0 +1,7 @@
+# environment variables
+.env
+.env.*
+!.env.example
+
+# Go air tmp directory
+tmp/

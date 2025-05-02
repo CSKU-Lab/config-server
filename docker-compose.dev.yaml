@@ -1,0 +1,26 @@
+services:
+  app:
+    container_name: config-grpc
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8081:8081"
+    volumes:
+      - .:/app
+    environment:
+      - ENV=docker
+    env_file:
+      - .env
+    restart: unless-stopped
+  mongo:
+    container_name: config-mongodb
+    image: mongo:latest
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: config-server
+      MONGO_INITDB_ROOT_PASSWORD: config-server-password
+
+volumes:
+  mongo_data:
