@@ -3,8 +3,10 @@ package services
 import (
 	"context"
 
-	"github.com/CSKU-Lab/config-server/domain/models/runner"
+	"github.com/CSKU-Lab/config-server/domain/models"
 	"github.com/CSKU-Lab/config-server/domain/repositories"
+	"github.com/CSKU-Lab/config-server/domain/requests"
+	"github.com/CSKU-Lab/generators"
 )
 
 type runnerService struct {
@@ -12,10 +14,10 @@ type runnerService struct {
 }
 
 type RunnerService interface {
-	Add(ctx context.Context, body *runner.Runner) error
-	GetAll(ctx context.Context) ([]runner.Runner, error)
-	GetByID(ctx context.Context, ID string) (*runner.Runner, error)
-	UpdateByID(ctx context.Context, ID string, body *runner.PartialOptions) (*runner.Runner, error)
+	Create(ctx context.Context, body *requests.CreateRunner) (string, error)
+	GetAll(ctx context.Context) ([]models.Runner, error)
+	GetByID(ctx context.Context, ID string) (*models.Runner, error)
+	UpdateByID(ctx context.Context, ID string, body *requests.UpdateRunner) error
 	DeleteByID(ctx context.Context, ID string) error
 }
 
@@ -25,55 +27,26 @@ func NewRunnerService(repo repositories.RunnerRepository) *runnerService {
 	}
 }
 
-func (l *runnerService) Add(ctx context.Context, body *runner.Runner) error {
-	return l.repo.Add(ctx, body)
+func (l *runnerService) Create(ctx context.Context, body *requests.CreateRunner) (string, error) {
+	id := generators.UUID()
+	err := l.repo.Create(ctx, id, body)
+	if err != nil {
+		return "", err
+	}
+
+	return id, nil
 }
 
-func (l *runnerService) GetAll(ctx context.Context) ([]runner.Runner, error) {
+func (l *runnerService) GetAll(ctx context.Context) ([]models.Runner, error) {
 	return l.repo.GetAll(ctx)
 }
 
-func (l *runnerService) GetByID(ctx context.Context, ID string) (*runner.Runner, error) {
+func (l *runnerService) GetByID(ctx context.Context, ID string) (*models.Runner, error) {
 	return l.repo.GetByID(ctx, ID)
 }
 
-func (l *runnerService) UpdateByID(ctx context.Context, ID string, body *runner.PartialOptions) (*runner.Runner, error) {
-	_runner, err := l.repo.GetByID(ctx, ID)
-	if err != nil {
-		return nil, err
-	}
-
-	if body.Name == nil {
-		body.Name = &_runner.Name
-	}
-
-	modRunner := runner.NewUpdate(&runner.PartialOptions{
-		Name:        body.Name,
-		BuildScript: body.BuildScript,
-		RunScript:   body.RunScript,
-	})
-
-	err = l.repo.UpdateByID(ctx, ID, modRunner)
-	if err != nil {
-		return nil, err
-	}
-
-	buildScript := _runner.BuildScript
-	if body.BuildScript != nil {
-		buildScript = *body.BuildScript
-	}
-
-	runScript := _runner.BuildScript
-	if body.RunScript != nil {
-		runScript = *body.RunScript
-	}
-
-	return &runner.Runner{
-		ID:          *modRunner.ID,
-		Name:        *modRunner.Name,
-		BuildScript: buildScript,
-		RunScript:   runScript,
-	}, nil
+func (l *runnerService) UpdateByID(ctx context.Context, ID string, body *requests.UpdateRunner) error {
+	return l.repo.UpdateByID(ctx, ID, body)
 }
 
 func (l *runnerService) DeleteByID(ctx context.Context, ID string) error {

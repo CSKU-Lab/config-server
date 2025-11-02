@@ -1,4 +1,4 @@
-package file
+package models
 
 import pb "github.com/CSKU-Lab/config-server/genproto/config/v1"
 
@@ -7,7 +7,7 @@ type File struct {
 	Content string `bson:"content"`
 }
 
-func FromPB(pb []*pb.File) []File {
+func PBFileToFile(pb []*pb.File) []File {
 	var files []File
 	for _, f := range pb {
 		files = append(files, File{
@@ -18,7 +18,7 @@ func FromPB(pb []*pb.File) []File {
 	return files
 }
 
-func ToPB(files []File) []*pb.File {
+func FileToPBFile(files []File) []*pb.File {
 	var pbFiles []*pb.File
 	for _, f := range files {
 		pbFiles = append(pbFiles, &pb.File{

@@ -11,9 +11,8 @@ import (
 	"time"
 
 	"github.com/CSKU-Lab/config-server/configs"
-	"github.com/CSKU-Lab/config-server/domain/models/compare"
-	"github.com/CSKU-Lab/config-server/domain/models/file"
-	"github.com/CSKU-Lab/config-server/domain/models/runner"
+	"github.com/CSKU-Lab/config-server/domain/models"
+	"github.com/CSKU-Lab/config-server/domain/requests"
 	"github.com/CSKU-Lab/config-server/domain/services"
 	pb "github.com/CSKU-Lab/config-server/genproto/config/v1"
 	"github.com/CSKU-Lab/config-server/internal/adapters/mongodb"
@@ -139,32 +138,29 @@ func (c *configServiceServer) GetRunner(ctx context.Context, req *pb.GetRunnerRe
 	}, nil
 }
 
-func (c *configServiceServer) AddRunner(ctx context.Context, req *pb.AddRunnerRequest) (*pb.RunnerResponse, error) {
-	runner := runner.New(&runner.Options{
+func (c *configServiceServer) CreateRunner(ctx context.Context, req *pb.CreateRunnerRequest) (*pb.CreateRunnerResponse, error) {
+	runner := &requests.CreateRunner{
 		Name:        req.GetName(),
 		BuildScript: req.GetBuildScript(),
 		RunScript:   req.GetRunScript(),
-	})
+	}
 
-	err := c.runnerService.Add(ctx, runner)
+	runnerID, err := c.runnerService.Create(ctx, runner)
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.RunnerResponse{
-		Id:          runner.ID,
-		Name:        runner.Name,
-		BuildScript: &runner.BuildScript,
-		RunScript:   runner.RunScript,
+	return &pb.CreateRunnerResponse{
+		Id: runnerID,
 	}, nil
 }
 
-func (c *configServiceServer) UpdateRunner(ctx context.Context, req *pb.UpdateRunnerRequest) (*pb.RunnerResponse, error) {
+func (c *configServiceServer) UpdateRunner(ctx context.Context, req *pb.UpdateRunnerRequest) (*emptypb.Empty, error) {
 	if req.GetId() == "" {
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	updated, err := c.runnerService.UpdateByID(ctx, req.GetId(), &runner.PartialOptions{
+	err := c.runnerService.UpdateByID(ctx, req.GetId(), &requests.UpdateRunner{
 		Name:        req.Name,
 		BuildScript: req.BuildScript,
 		RunScript:   req.RunScript,
@@ -173,12 +169,7 @@ func (c *configServiceServer) UpdateRunner(ctx context.Context, req *pb.UpdateRu
 		return nil, err
 	}
 
-	return &pb.RunnerResponse{
-		Id:          updated.ID,
-		Name:        updated.Name,
-		BuildScript: &updated.BuildScript,
-		RunScript:   updated.RunScript,
-	}, nil
+	return nil, nil
 }
 
 func (c *configServiceServer) DeleteRunner(ctx context.Context, req *pb.DeleteRunnerRequest) (*emptypb.Empty, error) {
@@ -194,11 +185,10 @@ func (c *configServiceServer) DeleteRunner(ctx context.Context, req *pb.DeleteRu
 	return &emptypb.Empty{}, nil
 }
 
-func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompareRequest) (*pb.CompareResponse, error) {
-	compare, err := c.compareService.Add(ctx, &compare.Option{
+func (c *configServiceServer) CreateCompare(ctx context.Context, req *pb.CreateCompareRequest) (*pb.CreateCompareResponse, error) {
+	compareID, err := c.compareService.Create(ctx, &requests.CreateCompare{
 		Name:        req.GetName(),
-		Script:      req.GetScript(),
-		Files:       file.FromPB(req.GetFiles()),
+		Files:       models.PBFileToFile(req.GetFiles()),
 		BuildScript: req.GetBuildScript(),
 		RunScript:   req.GetRunScript(),
 		RunName:     req.GetRunName(),
@@ -208,14 +198,8 @@ func (c *configServiceServer) AddCompare(ctx context.Context, req *pb.AddCompare
 		return nil, err
 	}
 
-	return &pb.CompareResponse{
-		Id:          compare.ID,
-		Name:        compare.Name,
-		Files:       file.ToPB(compare.Files),
-		BuildScript: compare.BuildScript,
-		RunScript:   compare.RunScript,
-		RunName:     compare.RunName,
-		Description: compare.Description,
+	return &pb.CreateCompareResponse{
+		Id: compareID,
 	}, nil
 }
 
@@ -232,7 +216,7 @@ func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompare
 	return &pb.CompareResponse{
 		Id:          compare.ID,
 		Name:        compare.Name,
-		Files:       file.ToPB(compare.Files),
+		Files:       models.FileToPBFile(compare.Files),
 		BuildScript: compare.BuildScript,
 		RunScript:   compare.RunScript,
 		RunName:     compare.RunName,
@@ -251,7 +235,7 @@ func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empt
 		responses = append(responses, &pb.CompareResponse{
 			Id:          compare.ID,
 			Name:        compare.Name,
-			Files:       file.ToPB(compare.Files),
+			Files:       models.FileToPBFile(compare.Files),
 			BuildScript: compare.BuildScript,
 			RunScript:   compare.RunScript,
 			RunName:     compare.RunName,
@@ -264,14 +248,14 @@ func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empt
 	}, nil
 }
 
-func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateCompareRequest) (*pb.CompareResponse, error) {
+func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateCompareRequest) (*emptypb.Empty, error) {
 	if req.GetId() == "" {
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	updated, err := c.compareService.UpdateByID(ctx, req.GetId(), &compare.PartialOption{
+	err := c.compareService.UpdateByID(ctx, req.GetId(), &requests.UpdateCompare{
 		Name:        req.Name,
-		Files:       file.FromPB(req.GetFiles()),
+		Files:       models.PBFileToFile(req.GetFiles()),
 		BuildScript: req.BuildScript,
 		RunScript:   req.RunScript,
 		RunName:     req.RunName,
@@ -281,15 +265,7 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 		return nil, err
 	}
 
-	return &pb.CompareResponse{
-		Id:          updated.ID,
-		Name:        updated.Name,
-		Files:       file.ToPB(updated.Files),
-		BuildScript: updated.BuildScript,
-		RunScript:   updated.RunScript,
-		RunName:     updated.RunName,
-		Description: updated.Description,
-	}, nil
+	return nil, nil
 }
 
 func (c *configServiceServer) DeleteCompare(ctx context.Context, req *pb.DeleteCompareRequest) (*emptypb.Empty, error) {

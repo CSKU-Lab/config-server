@@ -1,6 +1,6 @@
 module github.com/CSKU-Lab/config-server
 
-go 1.24.1
+go 1.25.1
 
 require (
 	go.mongodb.org/mongo-driver/v2 v2.1.0
@@ -8,7 +8,10 @@ require (
 	google.golang.org/protobuf v1.36.6
 )
 
+require github.com/google/uuid v1.6.0 // indirect
+
 require (
+	github.com/CSKU-Lab/generators v0.1.0
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.16.7 // indirect

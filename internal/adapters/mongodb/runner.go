@@ -6,8 +6,9 @@ import (
 	"fmt"
 
 	"github.com/CSKU-Lab/config-server/domain/cerrors"
-	"github.com/CSKU-Lab/config-server/domain/models/runner"
+	"github.com/CSKU-Lab/config-server/domain/models"
 	"github.com/CSKU-Lab/config-server/domain/repositories"
+	"github.com/CSKU-Lab/config-server/domain/requests"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
@@ -16,14 +17,29 @@ type runnerRepo struct {
 	col *mongo.Collection
 }
 
+type runnerDoc struct {
+	ID          string   `bson:"_id"`
+	Name        string   `bson:"name"`
+	Tags        []string `bson:"tags"`
+	BuildScript string   `bson:"build_script"`
+	RunScript   string   `bson:"run_script"`
+}
+
 func NewRunnerRepo(db *mongo.Database) repositories.RunnerRepository {
 	return &runnerRepo{
 		col: db.Collection("runners"),
 	}
 }
 
-func (l *runnerRepo) Add(ctx context.Context, body *runner.Runner) error {
-	_, err := l.col.InsertOne(ctx, body)
+func (l *runnerRepo) Create(ctx context.Context, ID string, body *requests.CreateRunner) error {
+	runner := &runnerDoc{
+		ID:          ID,
+		Name:        body.Name,
+		Tags:        body.Tags,
+		BuildScript: body.BuildScript,
+		RunScript:   body.RunScript,
+	}
+	_, err := l.col.InsertOne(ctx, runner)
 	if err != nil {
 		var mongoErr mongo.WriteException
 		if errors.As(err, &mongoErr) {
@@ -34,14 +50,14 @@ func (l *runnerRepo) Add(ctx context.Context, body *runner.Runner) error {
 	return nil
 }
 
-func (l *runnerRepo) GetAll(ctx context.Context) ([]runner.Runner, error) {
+func (l *runnerRepo) GetAll(ctx context.Context) ([]models.Runner, error) {
 	cursor, err := l.col.Find(ctx, bson.D{})
 	if err != nil {
 		return nil, fmt.Errorf("Cannot get runners : %v", err)
 	}
 	defer cursor.Close(ctx)
 
-	var runners []runner.Runner
+	var runners []models.Runner
 	err = cursor.All(ctx, &runners)
 	if err != nil {
 		return nil, cerrors.New(cerrors.CANNOT_GET_DATA)
@@ -50,8 +66,8 @@ func (l *runnerRepo) GetAll(ctx context.Context) ([]runner.Runner, error) {
 	return runners, nil
 }
 
-func (l *runnerRepo) GetByID(ctx context.Context, ID string) (*runner.Runner, error) {
-	var _runner runner.Runner
+func (l *runnerRepo) GetByID(ctx context.Context, ID string) (*models.Runner, error) {
+	var _runner models.Runner
 	err := l.col.FindOne(ctx, bson.M{"_id": ID}).Decode(&_runner)
 	if err != nil {
 		return nil, err
@@ -59,7 +75,7 @@ func (l *runnerRepo) GetByID(ctx context.Context, ID string) (*runner.Runner, er
 	return &_runner, nil
 }
 
-func (l *runnerRepo) UpdateByID(ctx context.Context, ID string, body *runner.UpdateRunner) error {
+func (l *runnerRepo) UpdateByID(ctx context.Context, ID string, body *requests.UpdateRunner) error {
 	updatedFields := getUpdatedFields(body)
 	_, err := l.col.UpdateOne(ctx, bson.M{"_id": ID}, bson.D{{"$set", updatedFields}})
 	if err != nil {
