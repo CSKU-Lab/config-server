@@ -21,4 +21,4 @@ ENV ENV=docker \
 COPY --from=builder /app/bin/config-server /app/config-server
 
 EXPOSE 50051
-CMD ["infisical", "run", "--projectId", "9e8645f6-f73c-411d-9736-a1cf4167a9f7", "--", "/app/config-server"]
+ENTRYPOINT ["/app/config-server"]
