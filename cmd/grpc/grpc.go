@@ -26,7 +26,7 @@ import (
 func main() {
 	env := configs.NewEnv()
 
-	client, err := mongo.Connect(options.Client().ApplyURI(env.GetMongoURI()))
+	client, err := mongo.Connect(options.Client().ApplyURI(env.Get("MONGO_URI")))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -36,14 +36,14 @@ func main() {
 		log.Fatalln("Failed to ping MongoDB: ", err)
 	}
 
-	db := client.Database("configs")
+	db := client.Database(env.Get("DATABASE_NAME"))
 	runnerRepo := mongodb.NewRunnerRepo(db)
 	runnerService := services.NewRunnerService(runnerRepo)
 
 	compareRepo := mongodb.NewCompareRepo(db)
 	compareService := services.NewCompareService(compareRepo)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", env.GetPort()))
+	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", env.Get("PORT")))
 	if err != nil {
 		log.Fatalln("failed to listen: ", err)
 	}
