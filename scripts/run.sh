@@ -1,6 +1,3 @@
-#!/bin/bash
+#!/bin/zsh
 
-export MONGO_URI=mongodb://config-server:config-server-password@localhost:27017 
-export PORT=8081
-
-go run cmd/grpc/grpc.go
+doppler run -- go run cmd/grpc/grpc.go
