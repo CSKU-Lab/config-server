@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -56,9 +57,8 @@ func main() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	ctx, cancel := context.WithCancel(context.Background())
-
-	go func() {
+	var wg sync.WaitGroup
+	wg.Go(func() {
 		sig := <-sigs
 		log.Printf("Receive %s signal from OS, going to shutdown...\n", sig)
 		timer := time.AfterFunc(10*time.Second, func() {
@@ -66,19 +66,22 @@ func main() {
 			s.Stop()
 		})
 		defer timer.Stop()
-		cancel()
 		s.GracefulStop()
 
-		if err := client.Disconnect(ctx); err != nil {
-			log.Fatalln("Can't disconnect mongodb : ", err)
-		}
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
 
+		if err := client.Disconnect(ctx); err != nil {
+			log.Println("Can't disconnect mongodb : ", err)
+		}
 		log.Println("Successfully gracefully shutdown the server :D")
-	}()
+	})
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalln("Cannot start grpc server :", err)
 	}
+
+	wg.Wait()
 }
 
 type configServiceServer struct {
