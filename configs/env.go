@@ -10,17 +10,9 @@ import (
 type env map[string]string
 
 func NewEnv() *env {
-	if os.Getenv("ENV") == "" {
-		log.Fatalln("You forget to set the ENV environment variable!")
-	}
-
-	if os.Getenv("ENV") != "docker" {
-		log.Println("Loading .env file...")
-
-		err := godotenv.Load()
-		if err != nil {
-			log.Fatalln("Error loading .env file")
-		}
+	err := godotenv.Load()
+	if err != nil && !os.IsNotExist(err) {
+		log.Println("Error loading .env file:", err)
 	}
 
 	return &env{
