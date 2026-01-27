@@ -16,10 +16,12 @@ import (
 	"github.com/CSKU-Lab/config-server/domain/requests"
 	"github.com/CSKU-Lab/config-server/domain/services"
 	pb "github.com/CSKU-Lab/config-server/genproto/config/v1"
+	taskPB "github.com/CSKU-Lab/config-server/genproto/task/v1"
 	"github.com/CSKU-Lab/config-server/internal/adapters/mongodb"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -44,13 +46,19 @@ func main() {
 	compareRepo := mongodb.NewCompareRepo(db)
 	compareService := services.NewCompareService(compareRepo)
 
+	taskGrpcClient, closeConn, err := initTaskGRPCClient(env.Get("TASK_SERVER_URL"))
+	if err != nil {
+		log.Fatal("Failed to connect to task gRPC server: ", err)
+	}
+	defer closeConn()
+
 	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", env.Get("PORT")))
 	if err != nil {
 		log.Fatalln("failed to listen: ", err)
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterConfigServiceServer(s, newServer(runnerService, compareService))
+	pb.RegisterConfigServiceServer(s, newServer(runnerService, compareService, taskGrpcClient))
 	reflection.Register(s)
 	log.Println("gRPC ConfigService registered")
 
@@ -88,13 +96,37 @@ type configServiceServer struct {
 	pb.UnimplementedConfigServiceServer
 	runnerService  services.RunnerService
 	compareService services.CompareService
+	taskClient     taskPB.TaskServiceClient
 }
 
-func newServer(runnerService services.RunnerService, compareService services.CompareService) *configServiceServer {
+func newServer(runnerService services.RunnerService, compareService services.CompareService, taskClient taskPB.TaskServiceClient) *configServiceServer {
 	return &configServiceServer{
 		runnerService:  runnerService,
 		compareService: compareService,
+		taskClient:     taskClient,
 	}
+}
+
+func (c *configServiceServer) cleanUpRunner(ctx context.Context, runnerID string) error {
+	req := &taskPB.RemoveRunnerOnCascadeRequest{
+		RunnerId: runnerID,
+	}
+	_, err := c.taskClient.RemoveRunnerOnCascade(ctx, req)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *configServiceServer) cleanUpCompareScript(ctx context.Context, scriptID string) error {
+	req := &taskPB.RemoveCompareScriptOnCascadeRequest{
+		CompareScriptId: scriptID,
+	}
+	_, err := c.taskClient.RemoveCompareScriptOnCascade(ctx, req)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *configServiceServer) GetRunners(ctx context.Context, req *pb.GetRunnersRequest) (*pb.GetRunnersResponse, error) {
@@ -120,7 +152,6 @@ func (c *configServiceServer) GetRunners(ctx context.Context, req *pb.GetRunners
 	return &pb.GetRunnersResponse{
 		Runners: responsesRunners,
 	}, nil
-
 }
 
 func (c *configServiceServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (*pb.RunnerResponse, error) {
@@ -181,6 +212,11 @@ func (c *configServiceServer) DeleteRunner(ctx context.Context, req *pb.DeleteRu
 	}
 
 	err := c.runnerService.DeleteByID(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.cleanUpRunner(ctx, req.GetId())
 	if err != nil {
 		return nil, err
 	}
@@ -281,5 +317,23 @@ func (c *configServiceServer) DeleteCompare(ctx context.Context, req *pb.DeleteC
 		return nil, err
 	}
 
+	err = c.cleanUpCompareScript(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
+}
+
+func initTaskGRPCClient(clientAddr string) (taskPB.TaskServiceClient, func(), error) {
+	conn, err := grpc.NewClient(clientAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	client := taskPB.NewTaskServiceClient(conn)
+
+	return client, func() {
+		conn.Close()
+	}, nil
 }

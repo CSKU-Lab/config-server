@@ -16,9 +16,10 @@ func NewEnv() *env {
 	}
 
 	return &env{
-		"MONGO_URI":     os.Getenv("MONGO_URI"),
-		"PORT":          os.Getenv("PORT"),
-		"DATABASE_NAME": os.Getenv("DATABASE_NAME"),
+		"MONGO_URI":       os.Getenv("MONGO_URI"),
+		"PORT":            os.Getenv("PORT"),
+		"DATABASE_NAME":   os.Getenv("DATABASE_NAME"),
+		"TASK_SERVER_URL": os.Getenv("TASK_SERVER_URL"),
 	}
 }
 
