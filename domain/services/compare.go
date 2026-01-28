@@ -6,7 +6,7 @@ import (
 	"github.com/CSKU-Lab/config-server/domain/models"
 	"github.com/CSKU-Lab/config-server/domain/repositories"
 	"github.com/CSKU-Lab/config-server/domain/requests"
-	"github.com/CSKU-Lab/generators"
+	"github.com/google/uuid"
 )
 
 type compareService struct {
@@ -28,13 +28,16 @@ func NewCompareService(repo repositories.CompareRepository) CompareService {
 }
 
 func (c *compareService) Create(ctx context.Context, body *requests.CreateCompare) (string, error) {
-	id := generators.UUID()
-	err := c.repo.Create(ctx, id, body)
+	id, err := uuid.NewV7()
+	if err != nil {
+		return "", err
+	}
+	err = c.repo.Create(ctx, id.String(), body)
 	if err != nil {
 		return "", err
 	}
 
-	return id, nil
+	return id.String(), nil
 }
 
 func (c *compareService) GetAll(ctx context.Context) ([]models.Compare, error) {

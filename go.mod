@@ -8,10 +8,9 @@ require (
 	google.golang.org/protobuf v1.36.6
 )
 
-require github.com/google/uuid v1.6.0 // indirect
+require github.com/google/uuid v1.6.0
 
 require (
-	github.com/CSKU-Lab/generators v0.1.0
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/joho/godotenv v1.5.1
 	github.com/klauspost/compress v1.16.7 // indirect

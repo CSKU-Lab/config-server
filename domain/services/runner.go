@@ -6,7 +6,7 @@ import (
 	"github.com/CSKU-Lab/config-server/domain/models"
 	"github.com/CSKU-Lab/config-server/domain/repositories"
 	"github.com/CSKU-Lab/config-server/domain/requests"
-	"github.com/CSKU-Lab/generators"
+	"github.com/google/uuid"
 )
 
 type runnerService struct {
@@ -28,13 +28,16 @@ func NewRunnerService(repo repositories.RunnerRepository) *runnerService {
 }
 
 func (l *runnerService) Create(ctx context.Context, body *requests.CreateRunner) (string, error) {
-	id := generators.UUID()
-	err := l.repo.Create(ctx, id, body)
+	id, err := uuid.NewV7()
+	if err != nil {
+		return "", err
+	}
+	err = l.repo.Create(ctx, id.String(), body)
 	if err != nil {
 		return "", err
 	}
 
-	return id, nil
+	return id.String(), nil
 }
 
 func (l *runnerService) GetAll(ctx context.Context) ([]models.Runner, error) {
