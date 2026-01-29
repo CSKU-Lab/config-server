@@ -16,6 +16,7 @@ import (
 	"github.com/CSKU-Lab/config-server/domain/requests"
 	"github.com/CSKU-Lab/config-server/domain/services"
 	pb "github.com/CSKU-Lab/config-server/genproto/config/v1"
+	graderPB "github.com/CSKU-Lab/config-server/genproto/grader/v1"
 	taskPB "github.com/CSKU-Lab/config-server/genproto/task/v1"
 	"github.com/CSKU-Lab/config-server/internal/adapters/mongodb"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -52,13 +53,19 @@ func main() {
 	}
 	defer closeConn()
 
+	graderGRPCClient, closeConn, err := initGraderGRPCClient(env.Get("GO_GRADER_SERVER_URL"))
+	if err != nil {
+		log.Fatal("Failed to connect to grader gRPC server: ", err)
+	}
+	defer closeConn()
+
 	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", env.Get("PORT")))
 	if err != nil {
 		log.Fatalln("failed to listen: ", err)
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterConfigServiceServer(s, newServer(runnerService, compareService, taskGrpcClient))
+	pb.RegisterConfigServiceServer(s, newServer(runnerService, compareService, taskGrpcClient, graderGRPCClient))
 	reflection.Register(s)
 	log.Println("gRPC ConfigService registered")
 
@@ -97,36 +104,16 @@ type configServiceServer struct {
 	runnerService  services.RunnerService
 	compareService services.CompareService
 	taskClient     taskPB.TaskServiceClient
+	graderClient   graderPB.GraderServiceClient
 }
 
-func newServer(runnerService services.RunnerService, compareService services.CompareService, taskClient taskPB.TaskServiceClient) *configServiceServer {
+func newServer(runnerService services.RunnerService, compareService services.CompareService, taskClient taskPB.TaskServiceClient, graderClient graderPB.GraderServiceClient) *configServiceServer {
 	return &configServiceServer{
 		runnerService:  runnerService,
 		compareService: compareService,
 		taskClient:     taskClient,
+		graderClient:   graderClient,
 	}
-}
-
-func (c *configServiceServer) cleanUpRunner(ctx context.Context, runnerID string) error {
-	req := &taskPB.RemoveRunnerOnCascadeRequest{
-		RunnerId: runnerID,
-	}
-	_, err := c.taskClient.RemoveRunnerOnCascade(ctx, req)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *configServiceServer) cleanUpCompareScript(ctx context.Context, scriptID string) error {
-	req := &taskPB.RemoveCompareScriptOnCascadeRequest{
-		CompareScriptId: scriptID,
-	}
-	_, err := c.taskClient.RemoveCompareScriptOnCascade(ctx, req)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *configServiceServer) GetRunners(ctx context.Context, req *pb.GetRunnersRequest) (*pb.GetRunnersResponse, error) {
@@ -184,6 +171,14 @@ func (c *configServiceServer) CreateRunner(ctx context.Context, req *pb.CreateRu
 		return nil, err
 	}
 
+	broadcastReq := &graderPB.BroadcastRequest{
+		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
+	}
+	_, err = c.graderClient.Broadcast(ctx, broadcastReq)
+	if err != nil {
+		return nil, err
+	}
+
 	return &pb.CreateRunnerResponse{
 		Id: runnerID,
 	}, nil
@@ -216,7 +211,18 @@ func (c *configServiceServer) DeleteRunner(ctx context.Context, req *pb.DeleteRu
 		return nil, err
 	}
 
-	err = c.cleanUpRunner(ctx, req.GetId())
+	taskReq := &taskPB.RemoveRunnerOnCascadeRequest{
+		RunnerId: req.GetId(),
+	}
+	_, err = c.taskClient.RemoveRunnerOnCascade(ctx, taskReq)
+	if err != nil {
+		return nil, err
+	}
+
+	broadcastReq := &graderPB.BroadcastRequest{
+		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
+	}
+	_, err = c.graderClient.Broadcast(ctx, broadcastReq)
 	if err != nil {
 		return nil, err
 	}
@@ -233,6 +239,14 @@ func (c *configServiceServer) CreateCompare(ctx context.Context, req *pb.CreateC
 		RunName:     req.GetRunName(),
 		Description: req.GetDescription(),
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	broadcastReq := &graderPB.BroadcastRequest{
+		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
+	}
+	_, err = c.graderClient.Broadcast(ctx, broadcastReq)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +331,18 @@ func (c *configServiceServer) DeleteCompare(ctx context.Context, req *pb.DeleteC
 		return nil, err
 	}
 
-	err = c.cleanUpCompareScript(ctx, req.GetId())
+	taskReq := &taskPB.RemoveCompareScriptOnCascadeRequest{
+		CompareScriptId: req.GetId(),
+	}
+	_, err = c.taskClient.RemoveCompareScriptOnCascade(ctx, taskReq)
+	if err != nil {
+		return nil, err
+	}
+
+	broadcastReq := &graderPB.BroadcastRequest{
+		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
+	}
+	_, err = c.graderClient.Broadcast(ctx, broadcastReq)
 	if err != nil {
 		return nil, err
 	}
@@ -332,6 +357,19 @@ func initTaskGRPCClient(clientAddr string) (taskPB.TaskServiceClient, func(), er
 	}
 
 	client := taskPB.NewTaskServiceClient(conn)
+
+	return client, func() {
+		conn.Close()
+	}, nil
+}
+
+func initGraderGRPCClient(clientAddr string) (graderPB.GraderServiceClient, func(), error) {
+	conn, err := grpc.NewClient(clientAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	client := graderPB.NewGraderServiceClient(conn)
 
 	return client, func() {
 		conn.Close()
