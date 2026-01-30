@@ -198,6 +198,14 @@ func (c *configServiceServer) UpdateRunner(ctx context.Context, req *pb.UpdateRu
 		return nil, err
 	}
 
+	broadcastReq := &graderPB.BroadcastRequest{
+		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
+	}
+	_, err = c.graderClient.Broadcast(ctx, broadcastReq)
+	if err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
 
@@ -314,6 +322,14 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 		RunName:     req.RunName,
 		Description: req.Description,
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	broadcastReq := &graderPB.BroadcastRequest{
+		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
+	}
+	_, err = c.graderClient.Broadcast(ctx, broadcastReq)
 	if err != nil {
 		return nil, err
 	}
