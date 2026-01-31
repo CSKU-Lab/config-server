@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/CSKU-Lab/cache"
 	"github.com/CSKU-Lab/config-server/configs"
 	"github.com/CSKU-Lab/config-server/domain/models"
 	"github.com/CSKU-Lab/config-server/domain/requests"
@@ -64,8 +65,17 @@ func main() {
 		log.Fatalln("failed to listen: ", err)
 	}
 
+	redis, err := cache.NewRedis(&cache.RedisOptions{
+		Addr:     env.Get("REDIS_SERVER_URL"),
+		Password: env.Get("REDIS_PASSWORD"),
+	})
+	if err != nil {
+		log.Fatalln("Cannot initialize cache repository", "error", err)
+	}
+	defer redis.Close()
+
 	s := grpc.NewServer()
-	pb.RegisterConfigServiceServer(s, newServer(runnerService, compareService, taskGrpcClient, graderGRPCClient))
+	pb.RegisterConfigServiceServer(s, newServer(runnerService, compareService, taskGrpcClient, graderGRPCClient, redis))
 	reflection.Register(s)
 	log.Println("gRPC ConfigService registered")
 
@@ -101,44 +111,69 @@ func main() {
 
 type configServiceServer struct {
 	pb.UnimplementedConfigServiceServer
-	runnerService  services.RunnerService
-	compareService services.CompareService
-	taskClient     taskPB.TaskServiceClient
-	graderClient   graderPB.GraderServiceClient
+	runnerService           services.RunnerService
+	compareService          services.CompareService
+	taskClient              taskPB.TaskServiceClient
+	graderClient            graderPB.GraderServiceClient
+	runnerCacheAllInstance  cache.CacheInstance[*pb.GetRunnersResponse]
+	compareCacheAllInstance cache.CacheInstance[*pb.GetComparesResponse]
+	cacheApp                cache.CacheApp
 }
 
-func newServer(runnerService services.RunnerService, compareService services.CompareService, taskClient taskPB.TaskServiceClient, graderClient graderPB.GraderServiceClient) *configServiceServer {
+func newServer(runnerService services.RunnerService, compareService services.CompareService, taskClient taskPB.TaskServiceClient, graderClient graderPB.GraderServiceClient, cacheApp cache.CacheApp) *configServiceServer {
+	cacheRepo := cacheApp.GetRepo()
+	runnerCacheAllInstance := cache.NewCacheInstance[*pb.GetRunnersResponse](
+		"runnerCache:all",
+		time.Hour*4,
+		cacheRepo,
+	)
+
+	compareCacheAllInstance := cache.NewCacheInstance[*pb.GetComparesResponse](
+		"compareCache:all",
+		time.Hour*4,
+		cacheRepo,
+	)
+
 	return &configServiceServer{
-		runnerService:  runnerService,
-		compareService: compareService,
-		taskClient:     taskClient,
-		graderClient:   graderClient,
+		runnerService:           runnerService,
+		compareService:          compareService,
+		taskClient:              taskClient,
+		graderClient:            graderClient,
+		runnerCacheAllInstance:  runnerCacheAllInstance,
+		compareCacheAllInstance: compareCacheAllInstance,
+		cacheApp:                cacheApp,
 	}
 }
 
 func (c *configServiceServer) GetRunners(ctx context.Context, req *pb.GetRunnersRequest) (*pb.GetRunnersResponse, error) {
-	responsesRunners := []*pb.Runner{}
-	runners, err := c.runnerService.GetAll(ctx)
+	runnerRes, err := c.runnerCacheAllInstance.LazyCaching(ctx, func() (*pb.GetRunnersResponse, error) {
+		responsesRunners := []*pb.Runner{}
+		runners, err := c.runnerService.GetAll(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, runner := range runners {
+			var name *string = nil
+			if req.IncludeName {
+				name = &runner.Name
+			}
+			responsesRunners = append(responsesRunners, &pb.Runner{
+				Id:          runner.ID,
+				Name:        name,
+				BuildScript: runner.BuildScript,
+				RunScript:   runner.RunScript,
+			})
+		}
+
+		return &pb.GetRunnersResponse{
+			Runners: responsesRunners,
+		}, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	for _, runner := range runners {
-		var name *string = nil
-		if req.IncludeName {
-			name = &runner.Name
-		}
-		responsesRunners = append(responsesRunners, &pb.Runner{
-			Id:          runner.ID,
-			Name:        name,
-			BuildScript: runner.BuildScript,
-			RunScript:   runner.RunScript,
-		})
-	}
-
-	return &pb.GetRunnersResponse{
-		Runners: responsesRunners,
-	}, nil
+	return runnerRes, nil
 }
 
 func (c *configServiceServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (*pb.RunnerResponse, error) {
@@ -146,17 +181,29 @@ func (c *configServiceServer) GetRunner(ctx context.Context, req *pb.GetRunnerRe
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	runner, err := c.runnerService.GetByID(ctx, req.GetId())
+	runnerCacheInstance := cache.NewCacheInstance[*pb.RunnerResponse](
+		"runnerCache:"+req.GetId(),
+		time.Hour*4,
+		c.cacheApp.GetRepo(),
+	)
+
+	runnerRes, err := runnerCacheInstance.LazyCaching(ctx, func() (*pb.RunnerResponse, error) {
+		runner, err := c.runnerService.GetByID(ctx, req.GetId())
+		if err != nil {
+			return nil, err
+		}
+
+		return &pb.RunnerResponse{
+			Id:          runner.ID,
+			Name:        runner.Name,
+			BuildScript: &runner.BuildScript,
+			RunScript:   runner.RunScript,
+		}, nil
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	return &pb.RunnerResponse{
-		Id:          runner.ID,
-		Name:        runner.Name,
-		BuildScript: &runner.BuildScript,
-		RunScript:   runner.RunScript,
-	}, nil
+	return runnerRes, nil
 }
 
 func (c *configServiceServer) CreateRunner(ctx context.Context, req *pb.CreateRunnerRequest) (*pb.CreateRunnerResponse, error) {
@@ -269,31 +316,19 @@ func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompare
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	compare, err := c.compareService.GetByID(ctx, req.GetId())
-	if err != nil {
-		return nil, err
-	}
+	compareCacheInstance := cache.NewCacheInstance[*pb.CompareResponse](
+		"compareCache:"+req.GetId(),
+		time.Hour*4,
+		c.cacheApp.GetRepo(),
+	)
 
-	return &pb.CompareResponse{
-		Id:          compare.ID,
-		Name:        compare.Name,
-		Files:       models.FileToPBFile(compare.Files),
-		BuildScript: compare.BuildScript,
-		RunScript:   compare.RunScript,
-		RunName:     compare.RunName,
-		Description: compare.Description,
-	}, nil
-}
+	compareRes, err := compareCacheInstance.LazyCaching(ctx, func() (*pb.CompareResponse, error) {
+		compare, err := c.compareService.GetByID(ctx, req.GetId())
+		if err != nil {
+			return nil, err
+		}
 
-func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empty) (*pb.GetComparesResponse, error) {
-	compare, err := c.compareService.GetAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	responses := []*pb.CompareResponse{}
-	for _, compare := range compare {
-		responses = append(responses, &pb.CompareResponse{
+		return &pb.CompareResponse{
 			Id:          compare.ID,
 			Name:        compare.Name,
 			Files:       models.FileToPBFile(compare.Files),
@@ -301,12 +336,42 @@ func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empt
 			RunScript:   compare.RunScript,
 			RunName:     compare.RunName,
 			Description: compare.Description,
-		})
+		}, nil
+	})
+	if err != nil {
+		return nil, err
 	}
+	return compareRes, nil
+}
 
-	return &pb.GetComparesResponse{
-		Compares: responses,
-	}, nil
+func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empty) (*pb.GetComparesResponse, error) {
+	compareRes, err := c.compareCacheAllInstance.LazyCaching(ctx, func() (*pb.GetComparesResponse, error) {
+		compare, err := c.compareService.GetAll(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		responses := []*pb.CompareResponse{}
+		for _, compare := range compare {
+			responses = append(responses, &pb.CompareResponse{
+				Id:          compare.ID,
+				Name:        compare.Name,
+				Files:       models.FileToPBFile(compare.Files),
+				BuildScript: compare.BuildScript,
+				RunScript:   compare.RunScript,
+				RunName:     compare.RunName,
+				Description: compare.Description,
+			})
+		}
+
+		return &pb.GetComparesResponse{
+			Compares: responses,
+		}, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return compareRes, nil
 }
 
 func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateCompareRequest) (*emptypb.Empty, error) {

@@ -21,6 +21,8 @@ func NewEnv() *env {
 		"DATABASE_NAME":        os.Getenv("DATABASE_NAME"),
 		"TASK_SERVER_URL":      os.Getenv("TASK_SERVER_URL"),
 		"GO_GRADER_SERVER_URL": os.Getenv("GO_GRADER_SERVER_URL"),
+		"REDIS_SERVER_URL":     os.Getenv("REDIS_SERVER_URL"),
+		"REDIS_PASSWORD":       os.Getenv("REDIS_PASSWORD"),
 	}
 }
 
