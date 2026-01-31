@@ -111,42 +111,35 @@ func main() {
 
 type configServiceServer struct {
 	pb.UnimplementedConfigServiceServer
-	runnerService           services.RunnerService
-	compareService          services.CompareService
-	taskClient              taskPB.TaskServiceClient
-	graderClient            graderPB.GraderServiceClient
-	runnerCacheAllInstance  cache.CacheInstance[*pb.GetRunnersResponse]
-	compareCacheAllInstance cache.CacheInstance[*pb.GetComparesResponse]
-	cacheApp                cache.CacheApp
+	runnerService  services.RunnerService
+	compareService services.CompareService
+	taskClient     taskPB.TaskServiceClient
+	graderClient   graderPB.GraderServiceClient
+	runnerCache    cache.CacheBuild
+	compareCache   cache.CacheBuild
+	cacheApp       cache.CacheApp
 }
 
 func newServer(runnerService services.RunnerService, compareService services.CompareService, taskClient taskPB.TaskServiceClient, graderClient graderPB.GraderServiceClient, cacheApp cache.CacheApp) *configServiceServer {
-	cacheRepo := cacheApp.GetRepo()
-	runnerCacheAllInstance := cache.NewCacheInstance[*pb.GetRunnersResponse](
-		"runnerCache:all",
-		time.Hour*4,
-		cacheRepo,
-	)
-
-	compareCacheAllInstance := cache.NewCacheInstance[*pb.GetComparesResponse](
-		"compareCache:all",
-		time.Hour*4,
-		cacheRepo,
-	)
+	runnerCache := cacheApp.Build("runnerCache")
+	compareCache := cacheApp.Build("compareCache")
 
 	return &configServiceServer{
-		runnerService:           runnerService,
-		compareService:          compareService,
-		taskClient:              taskClient,
-		graderClient:            graderClient,
-		runnerCacheAllInstance:  runnerCacheAllInstance,
-		compareCacheAllInstance: compareCacheAllInstance,
-		cacheApp:                cacheApp,
+		runnerService:  runnerService,
+		compareService: compareService,
+		taskClient:     taskClient,
+		graderClient:   graderClient,
+		runnerCache:    runnerCache,
+		compareCache:   compareCache,
+		cacheApp:       cacheApp,
 	}
 }
 
 func (c *configServiceServer) GetRunners(ctx context.Context, req *pb.GetRunnersRequest) (*pb.GetRunnersResponse, error) {
-	runnerRes, err := c.runnerCacheAllInstance.LazyCaching(ctx, func() (*pb.GetRunnersResponse, error) {
+	cacheObj := c.runnerCache.All(time.Hour * 4)
+	cacheInstance := cache.NewCacheInstance[*pb.GetRunnersResponse](cacheObj)
+
+	runnerRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.GetRunnersResponse, error) {
 		responsesRunners := []*pb.Runner{}
 		runners, err := c.runnerService.GetAll(ctx)
 		if err != nil {
@@ -181,13 +174,10 @@ func (c *configServiceServer) GetRunner(ctx context.Context, req *pb.GetRunnerRe
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	runnerCacheInstance := cache.NewCacheInstance[*pb.RunnerResponse](
-		"runnerCache:"+req.GetId(),
-		time.Hour*4,
-		c.cacheApp.GetRepo(),
-	)
+	cacheObj := c.runnerCache.One(time.Hour*4, req.GetId())
+	cacheInstance := cache.NewCacheInstance[*pb.RunnerResponse](cacheObj)
 
-	runnerRes, err := runnerCacheInstance.LazyCaching(ctx, func() (*pb.RunnerResponse, error) {
+	runnerRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.RunnerResponse, error) {
 		runner, err := c.runnerService.GetByID(ctx, req.GetId())
 		if err != nil {
 			return nil, err
@@ -214,6 +204,11 @@ func (c *configServiceServer) CreateRunner(ctx context.Context, req *pb.CreateRu
 	}
 
 	runnerID, err := c.runnerService.Create(ctx, runner)
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.runnerCache.InvalidateAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -245,6 +240,11 @@ func (c *configServiceServer) UpdateRunner(ctx context.Context, req *pb.UpdateRu
 		return nil, err
 	}
 
+	err = c.runnerCache.InvalidateAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	broadcastReq := &graderPB.BroadcastRequest{
 		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
 	}
@@ -262,6 +262,11 @@ func (c *configServiceServer) DeleteRunner(ctx context.Context, req *pb.DeleteRu
 	}
 
 	err := c.runnerService.DeleteByID(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.runnerCache.InvalidateAll(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -298,6 +303,11 @@ func (c *configServiceServer) CreateCompare(ctx context.Context, req *pb.CreateC
 		return nil, err
 	}
 
+	err = c.compareCache.InvalidateAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	broadcastReq := &graderPB.BroadcastRequest{
 		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
 	}
@@ -316,13 +326,10 @@ func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompare
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	compareCacheInstance := cache.NewCacheInstance[*pb.CompareResponse](
-		"compareCache:"+req.GetId(),
-		time.Hour*4,
-		c.cacheApp.GetRepo(),
-	)
+	cacheObj := c.compareCache.One(time.Hour*4, req.GetId())
+	cacheInstance := cache.NewCacheInstance[*pb.CompareResponse](cacheObj)
 
-	compareRes, err := compareCacheInstance.LazyCaching(ctx, func() (*pb.CompareResponse, error) {
+	compareRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.CompareResponse, error) {
 		compare, err := c.compareService.GetByID(ctx, req.GetId())
 		if err != nil {
 			return nil, err
@@ -345,7 +352,10 @@ func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompare
 }
 
 func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empty) (*pb.GetComparesResponse, error) {
-	compareRes, err := c.compareCacheAllInstance.LazyCaching(ctx, func() (*pb.GetComparesResponse, error) {
+	cacheObj := c.compareCache.All(time.Hour * 4)
+	cacheInstance := cache.NewCacheInstance[*pb.GetComparesResponse](cacheObj)
+
+	compareRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.GetComparesResponse, error) {
 		compare, err := c.compareService.GetAll(ctx)
 		if err != nil {
 			return nil, err
@@ -391,6 +401,11 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 		return nil, err
 	}
 
+	err = c.compareCache.InvalidateAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	broadcastReq := &graderPB.BroadcastRequest{
 		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
 	}
@@ -408,6 +423,11 @@ func (c *configServiceServer) DeleteCompare(ctx context.Context, req *pb.DeleteC
 	}
 
 	err := c.compareService.DeleteByID(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	err = c.compareCache.InvalidateAll(ctx)
 	if err != nil {
 		return nil, err
 	}
