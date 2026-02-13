@@ -16,6 +16,7 @@ type runnerService struct {
 type RunnerService interface {
 	Create(ctx context.Context, body *requests.CreateRunner) (string, error)
 	GetAll(ctx context.Context) ([]models.Runner, error)
+	GetPagination(ctx context.Context, req *requests.GetPagination) ([]models.Runner, int, error)
 	GetByID(ctx context.Context, ID string) (*models.Runner, error)
 	UpdateByID(ctx context.Context, ID string, body *requests.UpdateRunner) error
 	DeleteByID(ctx context.Context, ID string) error
@@ -25,6 +26,20 @@ func NewRunnerService(repo repositories.RunnerRepository) *runnerService {
 	return &runnerService{
 		repo: repo,
 	}
+}
+
+func (l *runnerService) GetPagination(ctx context.Context, req *requests.GetPagination) ([]models.Runner, int, error) {
+	pagination, err := l.repo.GetPagination(ctx, req)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	count, err := l.repo.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return pagination, count, nil
 }
 
 func (l *runnerService) Create(ctx context.Context, body *requests.CreateRunner) (string, error) {

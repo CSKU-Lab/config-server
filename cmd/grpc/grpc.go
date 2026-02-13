@@ -169,6 +169,38 @@ func (c *configServiceServer) GetRunners(ctx context.Context, req *pb.GetRunners
 	return runnerRes, nil
 }
 
+func (c *configServiceServer) GetRunnersPagination(ctx context.Context, req *pb.GetRunnersPaginationRequest) (*pb.GetRunnersPaginationResponse, error) {
+	runners, total, err := c.runnerService.GetPagination(
+		ctx,
+		&requests.GetPagination{
+			Page:      int(req.Pagination.GetPage()),
+			PageSize:  int(req.Pagination.GetPageSize()),
+			SortOrder: req.Pagination.GetSortOrder(),
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	responseRunners := []*pb.Runner{}
+	for _, runner := range runners {
+		var name *string = nil
+		if req.IncludeName {
+			name = &runner.Name
+		}
+		responseRunners = append(responseRunners, &pb.Runner{
+			Id:          runner.ID,
+			Name:        name,
+			BuildScript: runner.BuildScript,
+			RunScript:   runner.RunScript,
+		})
+	}
+
+	return &pb.GetRunnersPaginationResponse{
+		Runners: responseRunners,
+		Count:   int32(total),
+	}, nil
+}
+
 func (c *configServiceServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (*pb.RunnerResponse, error) {
 	if req.GetId() == "" {
 		return nil, fmt.Errorf("Id is required!")
