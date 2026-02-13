@@ -72,16 +72,28 @@ func (l *runnerRepo) GetPagination(ctx context.Context, req *requests.GetPaginat
 		"desc": -1,
 		"asc":  1,
 	}
+
 	order, ok := orderMap[req.SortOrder]
 	if !ok {
 		order = -1
 	}
+
+	filter := bson.D{}
+	if req.Search != "" {
+		filter = bson.D{
+			{Key: "name", Value: bson.D{
+				{Key: "$regex", Value: req.Search},
+				{Key: "$options", Value: "i"},
+			}},
+		}
+	}
+
 	opts := options.Find().
 		SetSkip(int64((req.Page - 1) * req.PageSize)).
 		SetLimit(int64(req.PageSize)).
 		SetSort(bson.D{{Key: "name", Value: order}})
 
-	cursor, err := l.col.Find(ctx, bson.D{}, opts)
+	cursor, err := l.col.Find(ctx, filter, opts)
 	if err != nil {
 		return nil, err
 	}

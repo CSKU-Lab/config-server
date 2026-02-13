@@ -26,6 +26,7 @@ type PaginationRequest struct {
 	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
 	PageSize      int32                  `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	SortOrder     string                 `protobuf:"bytes,3,opt,name=sort_order,json=sortOrder,proto3" json:"sort_order,omitempty"`
+	Search        string                 `protobuf:"bytes,4,opt,name=search,proto3" json:"search,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -81,16 +82,24 @@ func (x *PaginationRequest) GetSortOrder() string {
 	return ""
 }
 
+func (x *PaginationRequest) GetSearch() string {
+	if x != nil {
+		return x.Search
+	}
+	return ""
+}
+
 var File_config_v1_pagination_proto protoreflect.FileDescriptor
 
 const file_config_v1_pagination_proto_rawDesc = "" +
 	"\n" +
-	"\x1aconfig/v1/pagination.proto\x12\tconfig.v1\"c\n" +
+	"\x1aconfig/v1/pagination.proto\x12\tconfig.v1\"{\n" +
 	"\x11PaginationRequest\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"sort_order\x18\x03 \x01(\tR\tsortOrderB\x97\x01\n" +
+	"sort_order\x18\x03 \x01(\tR\tsortOrder\x12\x16\n" +
+	"\x06search\x18\x04 \x01(\tR\x06searchB\x97\x01\n" +
 	"\rcom.config.v1B\x0fPaginationProtoP\x01Z0github.com/CSKU-Lab/config-server/grpc/config/v1\xa2\x02\x03CXX\xaa\x02\tConfig.V1\xca\x02\tConfig\\V1\xe2\x02\x15Config\\V1\\GPBMetadata\xea\x02\n" +
 	"Config::V1b\x06proto3"
 

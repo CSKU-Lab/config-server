@@ -180,6 +180,7 @@ func (c *configServiceServer) GetRunnersPagination(ctx context.Context, req *pb.
 				Page:      int(req.Pagination.GetPage()),
 				PageSize:  int(req.Pagination.GetPageSize()),
 				SortOrder: req.Pagination.GetSortOrder(),
+				Search:    req.Pagination.GetSearch(),
 			})
 		if err != nil {
 			return nil, err
@@ -437,6 +438,7 @@ func (c *configServiceServer) GetComparesPagination(ctx context.Context, req *pb
 				Page:      int(req.Pagination.GetPage()),
 				PageSize:  int(req.Pagination.GetPageSize()),
 				SortOrder: req.Pagination.GetSortOrder(),
+				Search:    req.Pagination.GetSearch(),
 			})
 		if err != nil {
 			return nil, err
