@@ -16,6 +16,7 @@ type compareService struct {
 type CompareService interface {
 	Create(ctx context.Context, body *requests.CreateCompare) (string, error)
 	GetAll(ctx context.Context) ([]models.Compare, error)
+	GetPagination(ctx context.Context, req *requests.GetPagination) ([]models.Compare, int, error)
 	GetByID(ctx context.Context, ID string) (*models.Compare, error)
 	UpdateByID(ctx context.Context, ID string, body *requests.UpdateCompare) error
 	DeleteByID(ctx context.Context, ID string) error
@@ -25,6 +26,20 @@ func NewCompareService(repo repositories.CompareRepository) CompareService {
 	return &compareService{
 		repo: repo,
 	}
+}
+
+func (c *compareService) GetPagination(ctx context.Context, req *requests.GetPagination) ([]models.Compare, int, error) {
+	pagination, err := c.repo.GetPagination(ctx, req)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	count, err := c.repo.Count(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return pagination, count, nil
 }
 
 func (c *compareService) Create(ctx context.Context, body *requests.CreateCompare) (string, error) {

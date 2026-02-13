@@ -11,6 +11,7 @@ import (
 	"github.com/CSKU-Lab/config-server/domain/requests"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type compareRepo struct {
@@ -35,6 +36,44 @@ func NewCompareRepo(db *mongo.Database) repositories.CompareRepository {
 			return db.Collection(fmt.Sprintf("compares/%s", path))
 		},
 	}
+}
+
+func (c *compareRepo) GetPagination(ctx context.Context, req *requests.GetPagination) ([]models.Compare, error) {
+	orderMap := map[string]int{
+		"desc": -1,
+		"asc":  1,
+	}
+	order, ok := orderMap[req.SortOrder]
+	if !ok {
+		order = -1
+	}
+	opts := options.Find().
+		SetSkip(int64((req.Page - 1) * req.PageSize)).
+		SetLimit(int64(req.PageSize)).
+		SetSort(bson.D{{Key: "name", Value: order}})
+
+	cursor, err := c.col.Find(ctx, bson.D{}, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var compares []models.Compare
+	err = cursor.All(ctx, &compares)
+	if err != nil {
+		return nil, cerrors.New(cerrors.CANNOT_GET_DATA)
+	}
+
+	return compares, nil
+}
+
+func (c *compareRepo) Count(ctx context.Context) (int, error) {
+	count, err := c.col.CountDocuments(ctx, bson.D{})
+	if err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
 }
 
 func (c *compareRepo) Create(ctx context.Context, ID string, body *requests.CreateCompare) error {
