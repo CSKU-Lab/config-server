@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/CSKU-Lab/cache"
 	"github.com/CSKU-Lab/config-server/configs"
 	"github.com/CSKU-Lab/config-server/domain/models"
 	"github.com/CSKU-Lab/config-server/domain/requests"
@@ -65,17 +64,17 @@ func main() {
 		log.Fatalln("failed to listen: ", err)
 	}
 
-	redis, err := cache.NewRedis(&cache.RedisOptions{
-		Addr:     env.Get("REDIS_SERVER_URL"),
-		Password: env.Get("REDIS_PASSWORD"),
-	})
-	if err != nil {
-		log.Fatalln("Cannot initialize cache repository", "error", err)
-	}
-	defer redis.Close()
+	// redis, err := cache.NewRedis(&cache.RedisOptions{
+	// 	Addr:     env.Get("REDIS_SERVER_URL"),
+	// 	Password: env.Get("REDIS_PASSWORD"),
+	// })
+	// if err != nil {
+	// 	log.Fatalln("Cannot initialize cache repository", "error", err)
+	// }
+	// defer redis.Close()
 
 	s := grpc.NewServer()
-	pb.RegisterConfigServiceServer(s, newServer(runnerService, compareService, taskGrpcClient, graderGRPCClient, redis))
+	pb.RegisterConfigServiceServer(s, newServer(runnerService, compareService, taskGrpcClient, graderGRPCClient))
 	reflection.Register(s)
 	log.Println("gRPC ConfigService registered")
 
@@ -115,101 +114,67 @@ type configServiceServer struct {
 	compareService services.CompareService
 	taskClient     taskPB.TaskServiceClient
 	graderClient   graderPB.GraderServiceClient
-	runnerCache    cache.CacheBuild
-	compareCache   cache.CacheBuild
-	cacheApp       cache.CacheApp
+	// runnerCache    cache.CacheBuild
+	// compareCache   cache.CacheBuild
+	// cacheApp       cache.CacheApp
 }
 
-func newServer(runnerService services.RunnerService, compareService services.CompareService, taskClient taskPB.TaskServiceClient, graderClient graderPB.GraderServiceClient, cacheApp cache.CacheApp) *configServiceServer {
-	runnerCache := cacheApp.Build("runnerCache")
-	compareCache := cacheApp.Build("compareCache")
+func newServer(runnerService services.RunnerService, compareService services.CompareService, taskClient taskPB.TaskServiceClient, graderClient graderPB.GraderServiceClient) *configServiceServer {
+	// runnerCache := cacheApp.Build("runnerCache")
+	// compareCache := cacheApp.Build("compareCache")
 
 	return &configServiceServer{
 		runnerService:  runnerService,
 		compareService: compareService,
 		taskClient:     taskClient,
 		graderClient:   graderClient,
-		runnerCache:    runnerCache,
-		compareCache:   compareCache,
-		cacheApp:       cacheApp,
+		// runnerCache:    runnerCache,
+		// compareCache:   compareCache,
+		// cacheApp:       cacheApp,
 	}
-}
-
-func (c *configServiceServer) GetRunners(ctx context.Context, req *pb.GetRunnersRequest) (*pb.GetRunnersResponse, error) {
-	cacheObj := c.runnerCache.All(time.Hour * 4)
-	cacheInstance := cache.NewCacheInstance[*pb.GetRunnersResponse](cacheObj)
-
-	runnerRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.GetRunnersResponse, error) {
-		responsesRunners := []*pb.Runner{}
-		runners, err := c.runnerService.GetAll(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, runner := range runners {
-			var name *string = nil
-			if req.IncludeName {
-				name = &runner.Name
-			}
-			responsesRunners = append(responsesRunners, &pb.Runner{
-				Id:          runner.ID,
-				Name:        name,
-				BuildScript: runner.BuildScript,
-				RunScript:   runner.RunScript,
-			})
-		}
-
-		return &pb.GetRunnersResponse{
-			Runners: responsesRunners,
-		}, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return runnerRes, nil
 }
 
 func (c *configServiceServer) GetRunnersPagination(ctx context.Context, req *pb.GetRunnersPaginationRequest) (*pb.GetRunnersPaginationResponse, error) {
-	cacheObj := c.runnerCache.One(time.Hour*4, req.Pagination.String())
-	cacheInstance := cache.NewCacheInstance[*pb.GetRunnersPaginationResponse](cacheObj)
+	// cacheObj := c.runnerCache.One(time.Hour*4, req.Pagination.String())
+	// cacheInstance := cache.NewCacheInstance[*pb.GetRunnersPaginationResponse](cacheObj)
 
-	paginationRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.GetRunnersPaginationResponse, error) {
-		runners, total, err := c.runnerService.GetPagination(
-			ctx,
-			&requests.GetPagination{
-				Page:      int(req.Pagination.GetPage()),
-				PageSize:  int(req.Pagination.GetPageSize()),
-				SortOrder: req.Pagination.GetSortOrder(),
-				Search:    req.Pagination.GetSearch(),
-			})
-		if err != nil {
-			return nil, err
-		}
-
-		responseRunners := []*pb.Runner{}
-		for _, runner := range runners {
-			var name *string = nil
-			if req.IncludeName {
-				name = &runner.Name
-			}
-			responseRunners = append(responseRunners, &pb.Runner{
-				Id:          runner.ID,
-				Name:        name,
-				BuildScript: runner.BuildScript,
-				RunScript:   runner.RunScript,
-			})
-		}
-
-		return &pb.GetRunnersPaginationResponse{
-			Runners: responseRunners,
-			Count:   int32(total),
-		}, nil
-	})
+	// paginationRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.GetRunnersPaginationResponse, error) {
+	runners, total, err := c.runnerService.GetPagination(
+		ctx,
+		&requests.GetPagination{
+			Page:      int(req.Pagination.GetPage()),
+			PageSize:  int(req.Pagination.GetPageSize()),
+			SortOrder: req.Pagination.GetSortOrder(),
+			Search:    req.Pagination.GetSearch(),
+		})
 	if err != nil {
 		return nil, err
 	}
 
-	return paginationRes, nil
+	responseRunners := make([]*pb.RunnerPaginationData, len(runners))
+	for i, runner := range runners {
+		responseRunners[i] = &pb.RunnerPaginationData{
+			Id:          runner.ID,
+			Name:        runner.Name,
+			Description: runner.Description,
+		}
+
+		if req.GetIncludeScripts() {
+			responseRunners[i].BuildScript = runner.BuildScript
+			responseRunners[i].RunScript = runner.RunScript
+		}
+	}
+
+	return &pb.GetRunnersPaginationResponse{
+		Runners: responseRunners,
+		Count:   int32(total),
+	}, nil
+	// })
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// return paginationRes, nil
 }
 
 func (c *configServiceServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (*pb.RunnerResponse, error) {
@@ -217,33 +182,35 @@ func (c *configServiceServer) GetRunner(ctx context.Context, req *pb.GetRunnerRe
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	cacheObj := c.runnerCache.One(time.Hour*4, req.GetId())
-	cacheInstance := cache.NewCacheInstance[*pb.RunnerResponse](cacheObj)
-
-	runnerRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.RunnerResponse, error) {
-		runner, err := c.runnerService.GetByID(ctx, req.GetId())
-		if err != nil {
-			return nil, err
-		}
-
-		return &pb.RunnerResponse{
-			Id:          runner.ID,
-			Name:        runner.Name,
-			BuildScript: &runner.BuildScript,
-			RunScript:   runner.RunScript,
-		}, nil
-	})
+	// cacheObj := c.runnerCache.One(time.Hour*4, req.GetId())
+	// cacheInstance := cache.NewCacheInstance[*pb.RunnerResponse](cacheObj)
+	//
+	// runnerRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.RunnerResponse, error) {
+	runner, err := c.runnerService.GetByID(ctx, req.GetId())
 	if err != nil {
 		return nil, err
 	}
-	return runnerRes, nil
+
+	return &pb.RunnerResponse{
+		Id:           runner.ID,
+		Name:         runner.Name,
+		Description:  runner.Description,
+		BuildScript:  runner.BuildScript,
+		RunScript:    runner.RunScript,
+		InitialFiles: models.FileToPBFile(runner.InitialFiles),
+	}, nil
+	// })
+	// if err != nil {
+	// 	return nil, err
+	// }
+	//
+	// return runnerRes, nil
 }
 
 func (c *configServiceServer) CreateRunner(ctx context.Context, req *pb.CreateRunnerRequest) (*pb.CreateRunnerResponse, error) {
 	runner := &requests.CreateRunner{
 		Name:        req.GetName(),
-		BuildScript: req.GetBuildScript(),
-		RunScript:   req.GetRunScript(),
+		Description: req.GetDescription(),
 	}
 
 	runnerID, err := c.runnerService.Create(ctx, runner)
@@ -251,10 +218,10 @@ func (c *configServiceServer) CreateRunner(ctx context.Context, req *pb.CreateRu
 		return nil, err
 	}
 
-	err = c.runnerCache.InvalidateAll(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// err = c.runnerCache.InvalidateAll(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	broadcastReq := &graderPB.BroadcastRequest{
 		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
@@ -275,18 +242,20 @@ func (c *configServiceServer) UpdateRunner(ctx context.Context, req *pb.UpdateRu
 	}
 
 	err := c.runnerService.UpdateByID(ctx, req.GetId(), &requests.UpdateRunner{
-		Name:        req.Name,
-		BuildScript: req.BuildScript,
-		RunScript:   req.RunScript,
+		Name:         req.Name,
+		Description:  req.Description,
+		BuildScript:  req.BuildScript,
+		RunScript:    req.RunScript,
+		InitialFiles: models.PBFileToFile(req.GetInitialFiles()),
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	err = c.runnerCache.InvalidateAll(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// err = c.runnerCache.InvalidateAll(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	broadcastReq := &graderPB.BroadcastRequest{
 		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
@@ -309,10 +278,10 @@ func (c *configServiceServer) DeleteRunner(ctx context.Context, req *pb.DeleteRu
 		return nil, err
 	}
 
-	err = c.runnerCache.InvalidateAll(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// err = c.runnerCache.InvalidateAll(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	taskReq := &taskPB.RemoveRunnerOnCascadeRequest{
 		RunnerId: req.GetId(),
@@ -346,10 +315,10 @@ func (c *configServiceServer) CreateCompare(ctx context.Context, req *pb.CreateC
 		return nil, err
 	}
 
-	err = c.compareCache.InvalidateAll(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// err = c.compareCache.InvalidateAll(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	broadcastReq := &graderPB.BroadcastRequest{
 		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
@@ -369,16 +338,51 @@ func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompare
 		return nil, fmt.Errorf("Id is required!")
 	}
 
-	cacheObj := c.compareCache.One(time.Hour*4, req.GetId())
-	cacheInstance := cache.NewCacheInstance[*pb.CompareResponse](cacheObj)
+	// cacheObj := c.compareCache.One(time.Hour*4, req.GetId())
+	// cacheInstance := cache.NewCacheInstance[*pb.CompareResponse](cacheObj)
 
-	compareRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.CompareResponse, error) {
-		compare, err := c.compareService.GetByID(ctx, req.GetId())
-		if err != nil {
-			return nil, err
-		}
+	// compareRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.CompareResponse, error) {
+	compare, err := c.compareService.GetByID(ctx, req.GetId())
+	if err != nil {
+		return nil, err
+	}
 
-		return &pb.CompareResponse{
+	return &pb.CompareResponse{
+		Id:          compare.ID,
+		Name:        compare.Name,
+		Files:       models.FileToPBFile(compare.Files),
+		BuildScript: compare.BuildScript,
+		RunScript:   compare.RunScript,
+		RunName:     compare.RunName,
+		Description: compare.Description,
+	}, nil
+	// })
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return compareRes, nil
+}
+
+func (c *configServiceServer) GetComparesPagination(ctx context.Context, req *pb.GetComparesPaginationRequest) (*pb.GetComparesPaginationResponse, error) {
+	// cacheObj := c.compareCache.One(time.Hour*4, req.Pagination.String())
+	// cacheInstance := cache.NewCacheInstance[*pb.GetComparesPaginationResponse](cacheObj)
+
+	// paginationRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.GetComparesPaginationResponse, error) {
+	compares, total, err := c.compareService.GetPagination(
+		ctx,
+		&requests.GetPagination{
+			Page:      int(req.Pagination.GetPage()),
+			PageSize:  int(req.Pagination.GetPageSize()),
+			SortOrder: req.Pagination.GetSortOrder(),
+			Search:    req.Pagination.GetSearch(),
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	responses := []*pb.CompareResponse{}
+	for _, compare := range compares {
+		responses = append(responses, &pb.CompareResponse{
 			Id:          compare.ID,
 			Name:        compare.Name,
 			Files:       models.FileToPBFile(compare.Files),
@@ -386,86 +390,18 @@ func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompare
 			RunScript:   compare.RunScript,
 			RunName:     compare.RunName,
 			Description: compare.Description,
-		}, nil
-	})
-	if err != nil {
-		return nil, err
+		})
 	}
-	return compareRes, nil
-}
 
-func (c *configServiceServer) GetCompares(ctx context.Context, req *emptypb.Empty) (*pb.GetComparesResponse, error) {
-	cacheObj := c.compareCache.All(time.Hour * 4)
-	cacheInstance := cache.NewCacheInstance[*pb.GetComparesResponse](cacheObj)
-
-	compareRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.GetComparesResponse, error) {
-		compare, err := c.compareService.GetAll(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		responses := []*pb.CompareResponse{}
-		for _, compare := range compare {
-			responses = append(responses, &pb.CompareResponse{
-				Id:          compare.ID,
-				Name:        compare.Name,
-				Files:       models.FileToPBFile(compare.Files),
-				BuildScript: compare.BuildScript,
-				RunScript:   compare.RunScript,
-				RunName:     compare.RunName,
-				Description: compare.Description,
-			})
-		}
-
-		return &pb.GetComparesResponse{
-			Compares: responses,
-		}, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return compareRes, nil
-}
-
-func (c *configServiceServer) GetComparesPagination(ctx context.Context, req *pb.GetComparesPaginationRequest) (*pb.GetComparesPaginationResponse, error) {
-	cacheObj := c.compareCache.One(time.Hour*4, req.Pagination.String())
-	cacheInstance := cache.NewCacheInstance[*pb.GetComparesPaginationResponse](cacheObj)
-
-	paginationRes, err := cacheInstance.LazyCaching(ctx, func() (*pb.GetComparesPaginationResponse, error) {
-		compares, total, err := c.compareService.GetPagination(
-			ctx,
-			&requests.GetPagination{
-				Page:      int(req.Pagination.GetPage()),
-				PageSize:  int(req.Pagination.GetPageSize()),
-				SortOrder: req.Pagination.GetSortOrder(),
-				Search:    req.Pagination.GetSearch(),
-			})
-		if err != nil {
-			return nil, err
-		}
-
-		responses := []*pb.CompareResponse{}
-		for _, compare := range compares {
-			responses = append(responses, &pb.CompareResponse{
-				Id:          compare.ID,
-				Name:        compare.Name,
-				Files:       models.FileToPBFile(compare.Files),
-				BuildScript: compare.BuildScript,
-				RunScript:   compare.RunScript,
-				RunName:     compare.RunName,
-				Description: compare.Description,
-			})
-		}
-
-		return &pb.GetComparesPaginationResponse{
-			Compares: responses,
-			Count:    int32(total),
-		}, nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return paginationRes, nil
+	return &pb.GetComparesPaginationResponse{
+		Compares: responses,
+		Count:    int32(total),
+	}, nil
+	// })
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return paginationRes, nil
 }
 
 func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateCompareRequest) (*emptypb.Empty, error) {
@@ -485,10 +421,10 @@ func (c *configServiceServer) UpdateCompare(ctx context.Context, req *pb.UpdateC
 		return nil, err
 	}
 
-	err = c.compareCache.InvalidateAll(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// err = c.compareCache.InvalidateAll(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	broadcastReq := &graderPB.BroadcastRequest{
 		Action: graderPB.BroadcastAction_REFETCH_CONFIG,
@@ -511,10 +447,10 @@ func (c *configServiceServer) DeleteCompare(ctx context.Context, req *pb.DeleteC
 		return nil, err
 	}
 
-	err = c.compareCache.InvalidateAll(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// err = c.compareCache.InvalidateAll(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	taskReq := &taskPB.RemoveCompareScriptOnCascadeRequest{
 		CompareScriptId: req.GetId(),

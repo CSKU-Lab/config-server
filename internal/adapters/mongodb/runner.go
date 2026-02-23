@@ -19,11 +19,9 @@ type runnerRepo struct {
 }
 
 type runnerDoc struct {
-	ID          string   `bson:"_id"`
-	Name        string   `bson:"name"`
-	Tags        []string `bson:"tags"`
-	BuildScript string   `bson:"build_script"`
-	RunScript   string   `bson:"run_script"`
+	ID          string `bson:"_id"`
+	Name        string `bson:"name"`
+	Description string `bson:"description"`
 }
 
 func NewRunnerRepo(db *mongo.Database) repositories.RunnerRepository {
@@ -36,9 +34,7 @@ func (l *runnerRepo) Create(ctx context.Context, ID string, body *requests.Creat
 	runner := &runnerDoc{
 		ID:          ID,
 		Name:        body.Name,
-		Tags:        body.Tags,
-		BuildScript: body.BuildScript,
-		RunScript:   body.RunScript,
+		Description: body.Description,
 	}
 	_, err := l.col.InsertOne(ctx, runner)
 	if err != nil {
