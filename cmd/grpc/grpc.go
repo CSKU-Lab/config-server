@@ -22,8 +22,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -175,6 +177,35 @@ func (c *configServiceServer) GetRunnersPagination(ctx context.Context, req *pb.
 	// }
 
 	// return paginationRes, nil
+}
+
+func (c *configServiceServer) GetAllRunners(ctx context.Context, req *pb.GetAllRunnersRequest) (*pb.GetAllRunnersResponse, error) {
+	runners, err := c.runnerService.GetAll(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	runnersRes := make([]*pb.RunnerResponse, len(runners))
+	for i, runner := range runners {
+		runnersRes[i] = &pb.RunnerResponse{
+			Id: runner.ID,
+		}
+
+		if req.GetIncludeMetadata() {
+			runnersRes[i].Name = runner.Name
+			runnersRes[i].Description = runner.Description
+			runnersRes[i].InitialFiles = models.FileToPBFile(runner.InitialFiles)
+		}
+
+		if req.GetIncludeScripts() {
+			runnersRes[i].BuildScript = runner.BuildScript
+			runnersRes[i].RunScript = runner.RunScript
+		}
+	}
+
+	return &pb.GetAllRunnersResponse{
+		Runners: runnersRes,
+	}, nil
 }
 
 func (c *configServiceServer) GetRunner(ctx context.Context, req *pb.GetRunnerRequest) (*pb.RunnerResponse, error) {
@@ -361,6 +392,39 @@ func (c *configServiceServer) GetCompare(ctx context.Context, req *pb.GetCompare
 	// 	return nil, err
 	// }
 	// return compareRes, nil
+}
+
+func (c *configServiceServer) GetAllCompares(ctx context.Context, req *pb.GetAllComparesRequest) (*pb.GetAllComparesResponse, error) {
+	compares, err := c.compareService.GetAll(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
+	}
+
+	responses := make([]*pb.CompareResponse, len(compares))
+	for i, compare := range compares {
+		responses[i] = &pb.CompareResponse{
+			Id: compare.ID,
+		}
+
+		if req.GetIncludeMetadata() {
+			responses[i].Name = compare.Name
+			responses[i].Description = compare.Description
+		}
+
+		if req.GetIncludeScripts() {
+			responses[i].BuildScript = compare.BuildScript
+			responses[i].RunScript = compare.RunScript
+			responses[i].RunName = compare.RunName
+		}
+
+		if req.GetIncludeFiles() {
+			responses[i].Files = models.FileToPBFile(compare.Files)
+		}
+	}
+
+	return &pb.GetAllComparesResponse{
+		Compares: responses,
+	}, nil
 }
 
 func (c *configServiceServer) GetComparesPagination(ctx context.Context, req *pb.GetComparesPaginationRequest) (*pb.GetComparesPaginationResponse, error) {
