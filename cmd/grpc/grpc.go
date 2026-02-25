@@ -164,6 +164,7 @@ func (c *configServiceServer) GetRunnersPagination(ctx context.Context, req *pb.
 		if req.GetIncludeScripts() {
 			responseRunners[i].BuildScript = runner.BuildScript
 			responseRunners[i].RunScript = runner.RunScript
+			responseRunners[i].InitialFiles = models.FileToPBFile(runner.InitialFiles)
 		}
 	}
 
@@ -194,12 +195,12 @@ func (c *configServiceServer) GetAllRunners(ctx context.Context, req *pb.GetAllR
 		if req.GetIncludeMetadata() {
 			runnersRes[i].Name = runner.Name
 			runnersRes[i].Description = runner.Description
-			runnersRes[i].InitialFiles = models.FileToPBFile(runner.InitialFiles)
 		}
 
 		if req.GetIncludeScripts() {
 			runnersRes[i].BuildScript = runner.BuildScript
 			runnersRes[i].RunScript = runner.RunScript
+			runnersRes[i].InitialFiles = models.FileToPBFile(runner.InitialFiles)
 		}
 	}
 
