@@ -32,7 +32,13 @@ import (
 func main() {
 	env := configs.NewEnv()
 
-	client, err := mongo.Connect(options.Client().ApplyURI(env.Get("MONGO_URI")))
+	client, err := mongo.Connect(options.Client().
+		ApplyURI(env.Get("MONGO_URI")).
+		SetAuth(options.Credential{
+			Username:   env.Get("MONGO_USERNAME"),
+			Password:   env.Get("MONGO_PASSWORD"),
+			AuthSource: env.Get("DATABASE_NAME"),
+		}))
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -522,7 +528,7 @@ func (c *configServiceServer) DeleteCompare(ctx context.Context, req *pb.DeleteC
 	}
 	_, err = c.taskClient.RemoveCompareScriptOnCascade(ctx, taskReq)
 	if err != nil {
-		return nil, err
+		log.Printf("[DeleteCompare] cascade removal failed (non-fatal): %v", err)
 	}
 
 	broadcastReq := &graderPB.BroadcastRequest{
