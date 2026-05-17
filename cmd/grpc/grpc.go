@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	cskuotel "github.com/CSKU-Lab/otel"
 	"github.com/CSKU-Lab/config-server/configs"
 	"github.com/CSKU-Lab/config-server/domain/models"
 	"github.com/CSKU-Lab/config-server/domain/requests"
@@ -21,6 +22,7 @@ import (
 	"github.com/CSKU-Lab/config-server/internal/adapters/mongodb"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -30,6 +32,19 @@ import (
 )
 
 func main() {
+	otelShutdown, err := cskuotel.Init(context.Background())
+	if err != nil {
+		log.Printf("tracing unavailable: %v", err)
+	} else {
+		defer func() {
+			shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := otelShutdown(shutdownCtx); err != nil {
+				log.Printf("tracer shutdown error: %v", err)
+			}
+		}()
+	}
+
 	env := configs.NewEnv()
 
 	client, err := mongo.Connect(options.Client().
@@ -81,7 +96,7 @@ func main() {
 	// }
 	// defer redis.Close()
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.StatsHandler(otelgrpc.NewServerHandler()))
 	pb.RegisterConfigServiceServer(s, newServer(runnerService, compareService, taskGrpcClient, graderGRPCClient))
 	reflection.Register(s)
 	log.Println("gRPC ConfigService registered")
@@ -543,7 +558,10 @@ func (c *configServiceServer) DeleteCompare(ctx context.Context, req *pb.DeleteC
 }
 
 func initTaskGRPCClient(clientAddr string) (taskPB.TaskServiceClient, func(), error) {
-	conn, err := grpc.NewClient(clientAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(clientAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -556,7 +574,10 @@ func initTaskGRPCClient(clientAddr string) (taskPB.TaskServiceClient, func(), er
 }
 
 func initGraderGRPCClient(clientAddr string) (graderPB.GraderServiceClient, func(), error) {
-	conn, err := grpc.NewClient(clientAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(clientAddr,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
+	)
 	if err != nil {
 		return nil, nil, err
 	}
